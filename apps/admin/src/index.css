@@ -1,37 +1,88 @@
+@import 'tailwindcss';
+
+/*
+ * Bridges apps/admin onto Tailwind v4's @theme system while keeping
+ * packages/shared/src/theme.ts as the single source of truth for color.
+ *
+ * Every --color-* entry below is a `var()` indirection to a `--token-color-*`
+ * variable that theme/applyCssVariables.ts sets at runtime from the shared
+ * token module — never a literal hex value — so `bg-brand-orange`,
+ * `text-text-secondary`, etc. all resolve to the same palette apps/mobile
+ * uses. Radius and font tokens mirror packages/shared/src/theme.ts's static
+ * `radii`/`typography` values directly (those never change at runtime, so
+ * there's no variable indirection needed for them). Tailwind's default
+ * spacing scale (0.25rem/4px steps) already matches the shared `spacing`
+ * scale, so no custom spacing tokens are declared here.
+ */
+@theme {
+  --color-white: var(--token-color-white);
+  --color-black: var(--token-color-black);
+
+  --color-brand-orange: var(--token-color-brand-orange);
+  --color-brand-orange-dark: var(--token-color-brand-orange-dark);
+  --color-brand-orange-light: var(--token-color-brand-orange-light);
+
+  --color-brand-blue: var(--token-color-brand-blue);
+  --color-brand-blue-dark: var(--token-color-brand-blue-dark);
+  --color-brand-blue-light: var(--token-color-brand-blue-light);
+
+  --color-text-primary: var(--token-color-text-primary);
+  --color-text-secondary: var(--token-color-text-secondary);
+  --color-text-muted: var(--token-color-text-muted);
+  --color-border: var(--token-color-border);
+  --color-surface: var(--token-color-surface);
+
+  --color-success: var(--token-color-success);
+  --color-success-light: var(--token-color-success-light);
+  --color-warning: var(--token-color-warning);
+  --color-warning-light: var(--token-color-warning-light);
+  --color-danger: var(--token-color-danger);
+  --color-danger-light: var(--token-color-danger-light);
+  --color-info: var(--token-color-info);
+  --color-info-light: var(--token-color-info-light);
+
+  --color-tier-bronze: var(--token-color-tier-bronze);
+  --color-tier-silver: var(--token-color-tier-silver);
+  --color-tier-gold: var(--token-color-tier-gold);
+  --color-tier-diamond: var(--token-color-tier-diamond);
+
+  --font-sans: Inter, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: Poppins, Inter, sans-serif;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+}
+
 :root {
   color-scheme: light;
 }
 
-* {
-  box-sizing: border-box;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-body {
-  margin: 0;
-  min-height: 100svh;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font-family:
-    Inter,
-    -apple-system,
-    Segoe UI,
-    Roboto,
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
+  body {
+    margin: 0;
+    min-height: 100svh;
+    -webkit-font-smoothing: antialiased;
+    @apply bg-surface text-text-primary font-sans;
+  }
 
-h1,
-h2,
-h3 {
-  font-family: Poppins, Inter, sans-serif;
-  font-weight: 600;
-  margin: 0;
-}
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    @apply font-display font-semibold;
+  }
 
-a {
-  color: var(--color-brand-blue);
-}
+  a {
+    @apply text-brand-blue;
+  }
 
-#root {
-  min-height: 100svh;
+  #root {
+    min-height: 100svh;
+  }
 }
