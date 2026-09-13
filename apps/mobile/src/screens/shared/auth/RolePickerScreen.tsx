@@ -12,6 +12,7 @@ import { useAuthStore } from '../../../store/auth';
 import { useSessionStore } from '../../../store/session';
 import { useTheme } from '../../../theme/ThemeProvider';
 import type { AuthStackParamList } from '../../../navigation/types';
+import { afterAuthSession } from './afterAuthSession';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'RolePicker'>;
 
@@ -29,7 +30,6 @@ export function RolePickerScreen({ route, navigation }: Props) {
   const { colors, radii, spacing, typography } = useTheme();
   const setAccessToken = useSessionStore((state) => state.setAccessToken);
   const setUser = useAuthStore((state) => state.setUser);
-  const completeAuth = useAuthStore((state) => state.completeAuth);
   const [selected, setSelected] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,16 +42,8 @@ export function RolePickerScreen({ route, navigation }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const { accessToken, user } = await verifyOtp(route.params.phone, route.params.code, selected);
-      setAccessToken(accessToken);
-      setUser(user);
-      if (user.verificationStatus === 'verified') {
-        // setUser already flips isAuthenticated for this case, but call it
-        // explicitly too so the intent reads clearly at the call site.
-        completeAuth();
-      } else {
-        navigation.navigate('KycUpload');
-      }
+      const session = await verifyOtp(route.params.phone, route.params.code, selected);
+      afterAuthSession(navigation, setAccessToken, setUser, session);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not verify that code. Check it and try again.');
     } finally {

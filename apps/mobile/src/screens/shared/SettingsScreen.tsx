@@ -1,8 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { LogOut, ShieldCheck, ShieldAlert, ShieldQuestion, UserRound } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { KeyRound, LogOut, ShieldCheck, ShieldAlert, ShieldQuestion, UserRound } from 'lucide-react-native';
 
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import type { AppStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/auth';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -15,9 +18,11 @@ const VERIFICATION_META = {
 /** Profile card + logout. Saved Addresses / Payment Methods / Notification Preferences rows land in Phase 3 (PLANNING.md §8) once there's a real screen behind each. */
 export function SettingsScreen() {
   const { colors, radii, spacing, typography } = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const role = useAuthStore((state) => state.role);
   const phone = useAuthStore((state) => state.phone);
   const verificationStatus = useAuthStore((state) => state.verificationStatus);
+  const passwordSet = useAuthStore((state) => state.passwordSet);
   const logout = useAuthStore((state) => state.logout);
 
   const verificationMeta = verificationStatus ? VERIFICATION_META[verificationStatus] : null;
@@ -66,6 +71,15 @@ export function SettingsScreen() {
       )}
 
       <View style={{ marginTop: spacing.xl }}>
+        <Button
+          label={passwordSet ? 'Change password' : 'Set up a password'}
+          variant="outline"
+          icon={KeyRound}
+          onPress={() => navigation.navigate('ChangePassword')}
+        />
+      </View>
+
+      <View style={{ marginTop: spacing.md }}>
         <Button label="Log out" variant="danger" icon={LogOut} onPress={logout} />
       </View>
     </View>

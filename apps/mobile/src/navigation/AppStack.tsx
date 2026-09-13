@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AddBankAccountScreen } from '../screens/mazdoor/AddBankAccountScreen';
 import { WithdrawalScreen } from '../screens/mazdoor/WithdrawalScreen';
+import { ChangePasswordScreen } from '../screens/shared/ChangePasswordScreen';
 import { ChatScreen } from '../screens/shared/ChatScreen';
 import { DisputeDetailScreen } from '../screens/shared/DisputeDetailScreen';
 import { JobDetailScreen } from '../screens/shared/JobDetailScreen';
@@ -58,6 +59,11 @@ export function AppStack() {
         name="AddBankAccount"
         component={AddBankAccountScreen}
         options={{ headerShown: true, title: 'Add Bank Account' }}
+      />
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+        options={{ headerShown: true, title: 'Password' }}
       />
     </Stack.Navigator>
   );

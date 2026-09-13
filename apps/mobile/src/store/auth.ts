@@ -12,9 +12,12 @@ interface AuthState {
   userId: string | null;
   phone: string | null;
   verificationStatus: VerificationStatus | null;
-  /** Set from `POST /auth/otp/verify`'s response — the source of truth for everything above. */
+  /** Whether this account has a password set — `ChangePasswordScreen` uses this to show "Set" vs "Update". Kept in sync by `setUser`; also flipped locally by `ChangePasswordScreen` on a successful save so it doesn't need a refetch. */
+  passwordSet: boolean;
+  /** Set from `POST /auth/otp/verify`/`POST /auth/login`'s response — the source of truth for everything above. */
   setUser: (user: ApiUser) => void;
   setVerificationStatus: (status: VerificationStatus) => void;
+  setPasswordSet: (value: boolean) => void;
   completeAuth: () => void;
   logout: () => void;
 }
@@ -44,21 +47,24 @@ export const useAuthStore = create<AuthState>()(
       userId: null,
       phone: null,
       verificationStatus: null,
+      passwordSet: false,
       setUser: (user) =>
         set({
           role: user.role,
           userId: user.id,
           phone: user.phone,
           verificationStatus: user.verificationStatus,
+          passwordSet: user.passwordSet,
           // A returning user who already cleared verification skips the
           // KYC/pending screens entirely — see RolePickerScreen.
           isAuthenticated: user.verificationStatus === 'verified',
         }),
       setVerificationStatus: (verificationStatus) => set({ verificationStatus }),
+      setPasswordSet: (passwordSet) => set({ passwordSet }),
       completeAuth: () => set({ isAuthenticated: true }),
       logout: () => {
         useSessionStore.getState().clearAccessToken();
-        set({ isAuthenticated: false, role: null, userId: null, phone: null, verificationStatus: null });
+        set({ isAuthenticated: false, role: null, userId: null, phone: null, verificationStatus: null, passwordSet: false });
       },
     }),
     {

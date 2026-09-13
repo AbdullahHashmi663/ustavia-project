@@ -1,31 +1,37 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Phone } from 'lucide-react-native';
+import { Lock, Phone } from 'lucide-react-native';
 
-import { normalizePakistaniPhone, requestOtp } from '../../../api/auth';
+import { loginWithPassword, normalizePakistaniPhone } from '../../../api/auth';
 import { ApiError } from '../../../api/client';
 import { Button } from '../../../components/Button';
 import { Logo } from '../../../components/Logo';
 import { TextField } from '../../../components/TextField';
-import { useTheme } from '../../../theme/ThemeProvider';
 import type { AuthStackParamList } from '../../../navigation/types';
+import { useAuthStore } from '../../../store/auth';
+import { useSessionStore } from '../../../store/session';
+import { useTheme } from '../../../theme/ThemeProvider';
+import { afterAuthSession } from './afterAuthSession';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'PhoneEntry'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-export function PhoneEntryScreen({ navigation }: Props) {
+/** The returning-user fast path — phone + the password set via SetPasswordScreen, no OTP round trip. */
+export function LoginScreen({ navigation }: Props) {
   const { colors, spacing, typography } = useTheme();
+  const setAccessToken = useSessionStore((state) => state.setAccessToken);
+  const setUser = useAuthStore((state) => state.setUser);
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSend = async () => {
-    const normalized = normalizePakistaniPhone(phone);
+  const handleLogin = async () => {
     setError(null);
     setLoading(true);
     try {
-      const { devCode } = await requestOtp(normalized);
-      navigation.navigate('Otp', { phone: normalized, devCode });
+      const session = await loginWithPassword(normalizePakistaniPhone(phone), password);
+      afterAuthSession(navigation, setAccessToken, setUser, session);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not reach Ustavia. Check your connection and try again.');
     } finally {
@@ -38,11 +44,12 @@ export function PhoneEntryScreen({ navigation }: Props) {
       <Logo size={56} />
       <View style={{ height: spacing.xl }} />
       <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: 24 }]}>
-        Enter your phone number
+        Log in
       </Text>
       <Text style={[styles.subheading, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg }]}>
-        We'll text you a one-time code to verify it's you.
+        Enter your phone number and password.
       </Text>
+
       <TextField
         placeholder="+92 3XX XXXXXXX"
         keyboardType="phone-pad"
@@ -50,15 +57,28 @@ export function PhoneEntryScreen({ navigation }: Props) {
         onChangeText={setPhone}
         icon={Phone}
       />
-      {error && (
-        <Text style={[styles.error, { color: colors.danger, marginTop: spacing.sm }]}>{error}</Text>
-      )}
+      <View style={{ height: spacing.md }} />
+      <TextField
+        placeholder="Password"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+        icon={Lock}
+      />
+
+      {error && <Text style={[styles.error, { color: colors.danger, marginTop: spacing.sm }]}>{error}</Text>}
+
       <View style={{ marginTop: spacing.lg }}>
-        <Button label="Send OTP" loading={loading} disabled={phone.trim().length < 10} onPress={handleSend} />
+        <Button
+          label="Log In"
+          loading={loading}
+          disabled={phone.trim().length < 10 || !password}
+          onPress={handleLogin}
+        />
       </View>
 
-      <Pressable onPress={() => navigation.navigate('Login')} style={{ marginTop: spacing.lg, alignSelf: 'center' }}>
-        <Text style={{ color: colors.brandBlue, fontSize: typography.size.sm }}>Already have a password? Log in</Text>
+      <Pressable onPress={() => navigation.navigate('PhoneEntry')} style={{ marginTop: spacing.lg, alignSelf: 'center' }}>
+        <Text style={{ color: colors.brandBlue, fontSize: typography.size.sm }}>New here? Sign up with your phone number</Text>
       </Pressable>
     </View>
   );
