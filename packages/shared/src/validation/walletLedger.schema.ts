@@ -7,6 +7,7 @@ export const WALLET_LEDGER_ENTRY_TYPES = [
   'fbr_withholding',
   'cancellation_penalty',
   'promo_adjustment',
+  'withdrawal',
 ] as const;
 
 export type WalletLedgerEntryType = (typeof WALLET_LEDGER_ENTRY_TYPES)[number];

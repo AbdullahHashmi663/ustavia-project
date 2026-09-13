@@ -41,3 +41,32 @@ export const jobSchema = z.object({
 });
 
 export type Job = z.infer<typeof jobSchema>;
+
+const ALLOWED_JOB_STATUS_TRANSITIONS: Record<JobStatus, readonly JobStatus[]> = {
+  posted: ['negotiating'],
+  negotiating: ['confirmed'],
+  confirmed: ['in_progress'],
+  in_progress: ['completed', 'disputed'],
+  completed: ['paid', 'disputed'],
+  paid: [],
+  disputed: [],
+};
+
+export class InvalidJobStatusTransitionError extends Error {
+  readonly from: JobStatus;
+  readonly to: JobStatus;
+
+  constructor(from: JobStatus, to: JobStatus) {
+    super(`Cannot transition job from "${from}" to "${to}"`);
+    this.name = 'InvalidJobStatusTransitionError';
+    this.from = from;
+    this.to = to;
+  }
+}
+
+/** Throws immediately on any transition outside ARCHITECTURE.md §5. Single source of truth for apps/api and the mobile mock store. */
+export function assertValidJobStatusTransition(from: JobStatus, to: JobStatus): void {
+  if (!ALLOWED_JOB_STATUS_TRANSITIONS[from].includes(to)) {
+    throw new InvalidJobStatusTransitionError(from, to);
+  }
+}
