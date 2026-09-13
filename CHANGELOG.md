@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   blob (recolored from the app's own Haikei SVG assets), pulsing sonar
   rings, and the logo/wordmark settling into place, handed off seamlessly
   from `expo-splash-screen`'s native splash.
+- `apps/mobile`'s Phone/OTP/RolePicker screens now call the real
+  `AuthModule` endpoints instead of accepting any 6-digit code — a real
+  JWT is issued and persisted, and a returning already-verified user
+  skips the KYC/pending screens straight into the app. Job/wallet/chat
+  screens are still on the local mock store; that's the next slice.
 
 ### Planned
 - Dual-role toggle (one account acting as both Customer and Mazdoor) —

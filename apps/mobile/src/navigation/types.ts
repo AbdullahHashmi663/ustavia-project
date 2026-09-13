@@ -2,8 +2,9 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type AuthStackParamList = {
   PhoneEntry: undefined;
-  Otp: { phone: string };
-  RolePicker: undefined;
+  /** `devCode` is only ever present when apps/api has no real SMS provider wired up — see OtpService's doc comment. */
+  Otp: { phone: string; devCode?: string };
+  RolePicker: { phone: string; code: string };
   KycUpload: undefined;
   PendingVerification: undefined;
 };

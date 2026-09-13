@@ -93,9 +93,9 @@ balance settling to the exact expected commission/withholding split).
 `hrm_members`/`attendance_records`/`dispatch_assignments` (used by the
 admin app's own separate mock store, ARCHITECTURE.md §3's `HrmModule`/
 `FinanceModule`) don't have API-layer entities yet — apps/admin isn't
-wired to this API at all, it still reads its own local Zustand mock store,
-same as apps/mobile. Connecting either frontend to this real API is
-separate, not-yet-started work — see PLANNING.md's execution log.
+wired to this API at all, it still reads its own local Zustand mock store.
+`apps/mobile`'s auth flow is wired (next paragraph); its job/wallet/chat
+screens are not yet — see PLANNING.md's execution log.
 
 **Auth (as of 2026-09-13):** OTP request/verify + JWT issuance is real and
 working (`AuthModule`), but `SMS_PROVIDER_API_KEY` isn't wired to an actual
@@ -104,6 +104,16 @@ in the API response (`devCode`) so the flow is genuinely testable, and
 that return value is exactly what needs to be removed the moment a real
 SMS provider call replaces it. The OTP store is in-memory (single-process
 only — move to Redis before running more than one API instance, per §2.4).
+As of the mobile auth-wiring pass, `apps/mobile`'s Phone/OTP/RolePicker
+screens call these endpoints for real (`src/api/auth.ts`) instead of
+accepting any 6-digit code — the JWT is persisted (`useSessionStore`), and
+a returning already-`verified` user now skips the KYC/pending screens and
+lands straight in the app. One deliberate bridge: `useAuthStore`'s
+`userId` is still pinned to the existing `MOCK_MAZDOORS[0]`/
+`MOCK_CUSTOMERS[0]` demo persona rather than the real database id, because
+every job/wallet/chat screen still reads the local mock store keyed to
+those fixed ids — swap this the day those screens call the real API
+instead.
 
 ### 2.4 Redis + Socket.IO for realtime
 

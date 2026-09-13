@@ -4,9 +4,12 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CheckCircle2, HardHat, UserSearch } from 'lucide-react-native';
 import type { UserRole } from '@ustavia/shared';
 
+import { verifyOtp } from '../../../api/auth';
+import { ApiError } from '../../../api/client';
 import { Button } from '../../../components/Button';
 import { Logo } from '../../../components/Logo';
 import { useAuthStore } from '../../../store/auth';
+import { useSessionStore } from '../../../store/session';
 import { useTheme } from '../../../theme/ThemeProvider';
 import type { AuthStackParamList } from '../../../navigation/types';
 
@@ -17,13 +20,44 @@ const ROLE_OPTIONS: Array<{ role: UserRole; title: string; description: string; 
   { role: 'customer', title: "I'm a Customer", description: 'I need to hire help for a job.', icon: UserSearch },
 ];
 
-export function RolePickerScreen({ navigation }: Props) {
+/**
+ * The real `POST /auth/otp/verify` call happens here, not on OtpScreen —
+ * the API only pins a role the *first* time a phone is seen, so the role
+ * has to already be chosen before the call is made.
+ */
+export function RolePickerScreen({ route, navigation }: Props) {
   const { colors, radii, spacing, typography } = useTheme();
-  const setRole = useAuthStore((state) => state.setRole);
+  const setAccessToken = useSessionStore((state) => state.setAccessToken);
+  const setUser = useAuthStore((state) => state.setUser);
+  const completeAuth = useAuthStore((state) => state.completeAuth);
   const [selected, setSelected] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const accentFor = (role: UserRole) => (role === 'mazdoor' ? colors.brandOrange : colors.brandBlue);
   const tintFor = (role: UserRole) => (role === 'mazdoor' ? colors.brandOrangeLight : colors.brandBlueLight);
+
+  const handleContinue = async () => {
+    if (!selected) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const { accessToken, user } = await verifyOtp(route.params.phone, route.params.code, selected);
+      setAccessToken(accessToken);
+      setUser(user);
+      if (user.verificationStatus === 'verified') {
+        // setUser already flips isAuthenticated for this case, but call it
+        // explicitly too so the intent reads clearly at the call site.
+        completeAuth();
+      } else {
+        navigation.navigate('KycUpload');
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not verify that code. Check it and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
@@ -71,15 +105,9 @@ export function RolePickerScreen({ navigation }: Props) {
         })}
       </View>
 
-      <Button
-        label="Continue"
-        disabled={!selected}
-        onPress={() => {
-          if (!selected) return;
-          setRole(selected);
-          navigation.navigate('KycUpload');
-        }}
-      />
+      {error && <Text style={[styles.error, { color: colors.danger, marginBottom: spacing.md }]}>{error}</Text>}
+
+      <Button label="Continue" loading={loading} disabled={!selected} onPress={handleContinue} />
     </View>
   );
 }
@@ -88,6 +116,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   heading: {},
   subheading: { fontSize: 14 },
+  error: { fontSize: 13 },
   card: { borderWidth: 2 },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconCircle: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
