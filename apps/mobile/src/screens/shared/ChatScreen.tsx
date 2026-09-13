@@ -4,47 +4,39 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SendHorizontal } from 'lucide-react-native';
 
+import { useChatMessages, useJob, useSendMessage } from '../../api/hooks';
 import { ChatBubble } from '../../components/ChatBubble';
 import type { AppStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/auth';
-import { useJobsStore } from '../../store/jobs';
 import { useTheme } from '../../theme/ThemeProvider';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Chat'>;
 
 const QUICK_REPLIES = ['On my way', "I'm at the gate", 'Running late'];
 
-/** Realtime messaging via Socket.IO comes later; this mocks the client-side view of server-side redaction — ARCHITECTURE.md §3, §7. */
+/** Real, persisted, server-redacted chat history (`src/api/chat.ts`) — polled every 4s, no Socket.IO push yet (ARCHITECTURE.md §2.4 is still just a plan). */
 export function ChatScreen({ route }: Props) {
   const { jobId } = route.params;
   const { colors, radii, spacing, minTouchTarget } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const role = useAuthStore((state) => state.role);
   const userId = useAuthStore((state) => state.userId);
-  const job = useJobsStore((state) => state.jobs.find((j) => j.id === jobId));
-  const mazdoors = useJobsStore((state) => state.mazdoors);
-  const customers = useJobsStore((state) => state.customers);
-  // Select the raw array (a stable reference) and filter in the component body — filtering
-  // *inside* the selector returns a new array every render, which trips React's
-  // useSyncExternalStore infinite-loop guard ("getSnapshot should be cached").
-  const chatMessages = useJobsStore((state) => state.chatMessages);
-  const messages = chatMessages.filter((m) => m.jobId === jobId);
-  const sendChatMessage = useJobsStore((state) => state.sendChatMessage);
+  const { data: job } = useJob(jobId);
+  const { data: messages = [] } = useChatMessages(jobId);
+  const sendMessage = useSendMessage(jobId);
   const [draft, setDraft] = useState('');
 
-  const counterpart =
-    role === 'mazdoor'
-      ? customers.find((c) => c.id === job?.customerId)
-      : mazdoors.find((m) => m.id === job?.mazdoorId);
-
   useEffect(() => {
-    navigation.setOptions({ title: counterpart?.phone ?? 'Chat' });
-  }, [navigation, counterpart?.phone]);
+    // No counterpart phone shown — ARCHITECTURE.md §7 (visible to Ustavia's
+    // backend/CRM only, never the counterparty); apps/api's public-profile
+    // endpoint deliberately doesn't return one either.
+    navigation.setOptions({ title: job ? (role === 'mazdoor' ? 'Chat with customer' : 'Chat with Mazdoor') : 'Chat' });
+  }, [navigation, job, role]);
 
   const handleSend = (body: string) => {
-    if (!body.trim() || !userId) return;
-    sendChatMessage(jobId, userId, body.trim());
+    if (!body.trim()) return;
     setDraft('');
+    sendMessage.mutate(body.trim());
   };
 
   return (

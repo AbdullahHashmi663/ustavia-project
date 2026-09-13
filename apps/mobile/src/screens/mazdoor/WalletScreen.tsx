@@ -4,12 +4,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ArrowDownCircle, ArrowUpCircle, Landmark, Wallet } from 'lucide-react-native';
 import type { WalletLedgerEntryType } from '@ustavia/shared';
 
+import { useWallet } from '../../api/hooks';
 import { Button } from '../../components/Button';
 import { EmptyState } from '../../components/EmptyState';
-import { RatingBadge } from '../../components/RatingBadge';
 import type { AppStackParamList } from '../../navigation/types';
-import { useAuthStore } from '../../store/auth';
-import { useJobsStore } from '../../store/jobs';
 import { useTheme } from '../../theme/ThemeProvider';
 
 const LEDGER_LABELS: Record<WalletLedgerEntryType, string> = {
@@ -21,18 +19,14 @@ const LEDGER_LABELS: Record<WalletLedgerEntryType, string> = {
   withdrawal: 'Withdrawal',
 };
 
+/** Real balance + ledger from apps/api's PaymentsModule — a paid job settles here for real now (see JobDetailScreen/EscrowConfirmScreen). "Withdraw" still doesn't (next comment). */
 export function WalletScreen() {
   const { colors, radii, spacing, shadows, typography } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const userId = useAuthStore((state) => state.userId);
-  const mazdoors = useJobsStore((state) => state.mazdoors);
-  const walletLedger = useJobsStore((state) => state.walletLedger);
+  const { data: wallet, isLoading, refetch, isRefetching } = useWallet();
 
-  const me = mazdoors.find((m) => m.id === userId);
-  const myEntries = walletLedger
-    .filter((entry) => entry.mazdoorId === userId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const balance = myEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  const balance = wallet?.balance ?? 0;
+  const myEntries = wallet?.entries ?? [];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
@@ -40,7 +34,6 @@ export function WalletScreen() {
         <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: typography.size.xl }]}>
           Wallet
         </Text>
-        {me?.tier && me.ratingAvg != null && <RatingBadge tier={me.tier} ratingAvg={me.ratingAvg} />}
       </View>
 
       <View
@@ -67,6 +60,8 @@ export function WalletScreen() {
       <FlatList
         data={myEntries}
         keyExtractor={(entry) => entry.id}
+        refreshing={isRefetching}
+        onRefresh={refetch}
         contentContainerStyle={{ gap: spacing.sm, marginTop: spacing.sm, flexGrow: 1 }}
         renderItem={({ item }) => {
           const isCredit = item.amount >= 0;
@@ -94,7 +89,11 @@ export function WalletScreen() {
             </View>
           );
         }}
-        ListEmptyComponent={<EmptyState icon={Wallet} title="No wallet activity yet" description="Payouts and fees for completed jobs will show up here." />}
+        ListEmptyComponent={
+          isLoading ? null : (
+            <EmptyState icon={Wallet} title="No wallet activity yet" description="Payouts and fees for completed jobs will show up here." />
+          )
+        }
       />
     </View>
   );

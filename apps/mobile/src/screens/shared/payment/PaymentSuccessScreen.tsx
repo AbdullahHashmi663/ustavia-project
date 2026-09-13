@@ -3,9 +3,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CheckCircle2 } from 'lucide-react-native';
 
+import { useJob } from '../../../api/hooks';
 import { Button } from '../../../components/Button';
 import type { AppStackParamList } from '../../../navigation/types';
-import { useJobsStore } from '../../../store/jobs';
 import { useTheme } from '../../../theme/ThemeProvider';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PaymentSuccess'>;
@@ -15,7 +15,7 @@ export function PaymentSuccessScreen({ route }: Props) {
   const { jobId } = route.params;
   const { colors, radii, spacing, typography } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const job = useJobsStore((state) => state.jobs.find((j) => j.id === jobId));
+  const { data: job } = useJob(jobId);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>

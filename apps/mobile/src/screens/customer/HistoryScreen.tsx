@@ -4,11 +4,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DEFAULT_WARRANTY_WINDOW_DAYS } from '@ustavia/shared';
 import { History, ShieldCheck } from 'lucide-react-native';
 
+import { useJobsList } from '../../api/hooks';
 import { EmptyState } from '../../components/EmptyState';
 import { JobCard } from '../../components/JobCard';
 import type { AppStackParamList } from '../../navigation/types';
-import { useAuthStore } from '../../store/auth';
-import { useJobsStore } from '../../store/jobs';
 import { useTheme } from '../../theme/ThemeProvider';
 
 const DONE_STATUSES = ['completed', 'paid', 'disputed'] as const;
@@ -24,10 +23,9 @@ function warrantyDaysLeft(completedAt: Date | null): number | null {
 export function HistoryScreen() {
   const { colors, radii, spacing, typography } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const userId = useAuthStore((state) => state.userId);
-  const jobs = useJobsStore((state) => state.jobs);
+  const { data: jobs = [], isLoading, refetch, isRefetching } = useJobsList({ mine: true });
 
-  const myJobs = jobs.filter((job) => job.customerId === userId && DONE_STATUSES.includes(job.status as (typeof DONE_STATUSES)[number]));
+  const myJobs = jobs.filter((job) => DONE_STATUSES.includes(job.status as (typeof DONE_STATUSES)[number]));
 
   return (
     <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
@@ -37,6 +35,8 @@ export function HistoryScreen() {
       <FlatList
         data={myJobs}
         keyExtractor={(job) => job.id}
+        refreshing={isRefetching}
+        onRefresh={refetch}
         contentContainerStyle={{ gap: spacing.md, marginTop: spacing.lg, flexGrow: 1 }}
         renderItem={({ item }) => {
           const daysLeft = item.status === 'paid' ? warrantyDaysLeft(item.completedAt) : null;
@@ -60,7 +60,9 @@ export function HistoryScreen() {
           );
         }}
         ListEmptyComponent={
-          <EmptyState icon={History} title="No past jobs yet" description="Completed and paid jobs will show up here." />
+          isLoading ? null : (
+            <EmptyState icon={History} title="No past jobs yet" description="Completed and paid jobs will show up here." />
+          )
         }
       />
     </View>

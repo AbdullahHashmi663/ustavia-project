@@ -5,10 +5,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePlus, X } from 'lucide-react-native';
 
+import { useCreateJob } from '../../api/hooks';
+import { ApiError } from '../../api/client';
 import { Button } from '../../components/Button';
 import type { AppStackParamList } from '../../navigation/types';
-import { useAuthStore } from '../../store/auth';
-import { useJobsStore } from '../../store/jobs';
 import { useTheme } from '../../theme/ThemeProvider';
 
 const MAX_PHOTOS = 4;
@@ -16,10 +16,10 @@ const MAX_PHOTOS = 4;
 export function PostJobScreen() {
   const { colors, radii, spacing, typography } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const userId = useAuthStore((state) => state.userId);
-  const postJob = useJobsStore((state) => state.postJob);
+  const createJob = useCreateJob();
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const addPhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -32,12 +32,24 @@ export function PostJobScreen() {
 
   const removePhoto = (uri: string) => setPhotos((prev) => prev.filter((p) => p !== uri));
 
-  const handlePost = () => {
-    if (!userId || !description.trim()) return;
-    const job = postJob({ customerId: userId, description: description.trim() });
-    setDescription('');
-    setPhotos([]);
-    navigation.navigate('JobDetail', { jobId: job.id });
+  const handlePost = async () => {
+    if (!description.trim()) return;
+    setError(null);
+    try {
+      // Photos aren't sent — there's no upload endpoint yet to turn a
+      // locally-picked image into the real URL CreateJobDto requires (same
+      // gap as CNIC upload). Location is a placeholder near Karachi, not a
+      // real device fix — real geolocation isn't wired up yet either.
+      const job = await createJob.mutateAsync({
+        description: description.trim(),
+        location: { latitude: 24.86 + (Math.random() - 0.5) * 0.05, longitude: 67.0 + (Math.random() - 0.5) * 0.05 },
+      });
+      setDescription('');
+      setPhotos([]);
+      navigation.navigate('JobDetail', { jobId: job.id });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not post this job. Check your connection and try again.');
+    }
   };
 
   return (
@@ -84,8 +96,16 @@ export function PostJobScreen() {
         )}
       </View>
 
+      {error && <Text style={[styles.error, { color: colors.danger, marginTop: spacing.md }]}>{error}</Text>}
+
       <View style={{ marginTop: spacing.xl }}>
-        <Button label="Post Job" variant="trust" disabled={!description.trim()} onPress={handlePost} />
+        <Button
+          label="Post Job"
+          variant="trust"
+          loading={createJob.isPending}
+          disabled={!description.trim()}
+          onPress={handlePost}
+        />
       </View>
     </ScrollView>
   );
@@ -96,6 +116,7 @@ const styles = StyleSheet.create({
   heading: {},
   textArea: { borderWidth: 1, padding: 14, fontSize: 15, textAlignVertical: 'top', minHeight: 100 },
   label: { fontSize: 13, marginTop: 16, marginBottom: 8 },
+  error: { fontSize: 13 },
   photoRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   photoTile: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   photoImage: { width: '100%', height: '100%' },

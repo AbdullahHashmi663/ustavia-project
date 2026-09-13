@@ -3,9 +3,7 @@ import { LogOut, ShieldCheck, ShieldAlert, ShieldQuestion, UserRound } from 'luc
 
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { RatingBadge } from '../../components/RatingBadge';
 import { useAuthStore } from '../../store/auth';
-import { useJobsStore } from '../../store/jobs';
 import { useTheme } from '../../theme/ThemeProvider';
 
 const VERIFICATION_META = {
@@ -18,13 +16,11 @@ const VERIFICATION_META = {
 export function SettingsScreen() {
   const { colors, radii, spacing, typography } = useTheme();
   const role = useAuthStore((state) => state.role);
-  const userId = useAuthStore((state) => state.userId);
+  const phone = useAuthStore((state) => state.phone);
+  const verificationStatus = useAuthStore((state) => state.verificationStatus);
   const logout = useAuthStore((state) => state.logout);
-  const mazdoors = useJobsStore((state) => state.mazdoors);
-  const customers = useJobsStore((state) => state.customers);
 
-  const profile = role === 'mazdoor' ? mazdoors.find((m) => m.id === userId) : customers.find((c) => c.id === userId);
-  const verificationMeta = profile ? VERIFICATION_META[profile.verificationStatus] : null;
+  const verificationMeta = verificationStatus ? VERIFICATION_META[verificationStatus] : null;
   const tonePalette = {
     warning: { bg: colors.warningLight, fg: colors.warning },
     info: { bg: colors.infoLight, fg: colors.info },
@@ -37,7 +33,7 @@ export function SettingsScreen() {
         Settings
       </Text>
 
-      {profile && (
+      {phone && (
         <Card style={{ marginTop: spacing.lg }}>
           <View style={styles.profileRow}>
             <View style={[styles.avatar, { backgroundColor: colors.surface, borderRadius: radii.full }]}>
@@ -45,11 +41,8 @@ export function SettingsScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.textPrimary, fontFamily: typography.headingWeights.semibold, fontSize: typography.size.base }}>
-                {profile.phone}
+                {phone}
               </Text>
-              {'email' in profile && profile.email && (
-                <Text style={{ color: colors.textSecondary, fontSize: typography.size.sm }}>{profile.email}</Text>
-              )}
               <Text style={{ color: colors.textMuted, fontSize: typography.size.xs, marginTop: 2, textTransform: 'capitalize' }}>
                 {role} account
               </Text>
@@ -67,12 +60,6 @@ export function SettingsScreen() {
               <Text style={{ color: tonePalette[verificationMeta.tone].fg, fontSize: typography.size.xs, fontFamily: typography.headingWeights.semibold }}>
                 {verificationMeta.label}
               </Text>
-            </View>
-          )}
-
-          {'tier' in profile && profile.tier && profile.ratingAvg != null && (
-            <View style={{ marginTop: spacing.md }}>
-              <RatingBadge tier={profile.tier} ratingAvg={profile.ratingAvg} />
             </View>
           )}
         </Card>

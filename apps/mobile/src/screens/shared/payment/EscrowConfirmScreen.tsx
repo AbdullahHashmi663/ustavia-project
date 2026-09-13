@@ -4,9 +4,10 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Check, ShieldCheck } from 'lucide-react-native';
 
+import { ApiError } from '../../../api/client';
+import { usePayJob, useJob } from '../../../api/hooks';
 import { Button } from '../../../components/Button';
 import type { AppStackParamList } from '../../../navigation/types';
-import { useJobsStore } from '../../../store/jobs';
 import { useTheme } from '../../../theme/ThemeProvider';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'EscrowConfirm'>;
@@ -16,10 +17,10 @@ export function EscrowConfirmScreen({ route }: Props) {
   const { jobId } = route.params;
   const { colors, radii, spacing, typography } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const job = useJobsStore((state) => state.jobs.find((j) => j.id === jobId));
-  const mazdoors = useJobsStore((state) => state.mazdoors);
-  const pay = useJobsStore((state) => state.pay);
+  const { data: job } = useJob(jobId);
+  const pay = usePayJob();
   const [agreed, setAgreed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!job || job.agreedPrice == null) {
     return (
@@ -29,11 +30,14 @@ export function EscrowConfirmScreen({ route }: Props) {
     );
   }
 
-  const mazdoor = mazdoors.find((m) => m.id === job.mazdoorId);
-
-  const handlePay = () => {
-    pay(jobId);
-    navigation.replace('PaymentSuccess', { jobId });
+  const handlePay = async () => {
+    setError(null);
+    try {
+      await pay.mutateAsync(jobId);
+      navigation.replace('PaymentSuccess', { jobId });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Payment failed. Try again.');
+    }
   };
 
   return (
@@ -45,7 +49,7 @@ export function EscrowConfirmScreen({ route }: Props) {
         Your Payment is Protected
       </Text>
       <Text style={[styles.body, { color: colors.textSecondary, marginTop: spacing.xs }]}>
-        Rs {job.agreedPrice.toLocaleString()} will be held securely and only released to {mazdoor?.phone ?? 'your Mazdoor'} once you confirm the job is complete.
+        Rs {job.agreedPrice.toLocaleString()} will be held securely and only released to your Mazdoor once you confirm the job is complete.
       </Text>
 
       <Pressable onPress={() => setAgreed((v) => !v)} style={[styles.checkboxRow, { marginTop: spacing.xl }]}>
@@ -64,8 +68,15 @@ export function EscrowConfirmScreen({ route }: Props) {
         <Text style={{ color: colors.textPrimary, flex: 1 }}>I understand and agree to how Escrow works</Text>
       </Pressable>
 
+      {error && <Text style={{ color: colors.danger, marginTop: spacing.md, textAlign: 'center' }}>{error}</Text>}
+
       <View style={{ marginTop: spacing.xl }}>
-        <Button label={`Pay Rs ${job.agreedPrice.toLocaleString()} & Confirm`} disabled={!agreed} onPress={handlePay} />
+        <Button
+          label={`Pay Rs ${job.agreedPrice.toLocaleString()} & Confirm`}
+          disabled={!agreed}
+          loading={pay.isPending}
+          onPress={handlePay}
+        />
       </View>
     </View>
   );

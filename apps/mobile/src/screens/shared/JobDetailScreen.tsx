@@ -15,6 +15,16 @@ import {
 } from 'lucide-react-native';
 import { DISPUTE_CATEGORIES, type DisputeCategory } from '@ustavia/shared';
 
+import {
+  useAcceptConfirmation,
+  useJob,
+  useMarkComplete,
+  usePublicProfile,
+  useProposeConfirmation,
+  useRaiseDispute,
+  useStartJob,
+} from '../../api/hooks';
+import { ApiError } from '../../api/client';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { RatingBadge } from '../../components/RatingBadge';
@@ -43,21 +53,23 @@ export function JobDetailScreen({ route }: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
   const role = useAuthStore((state) => state.role);
-  const userId = useAuthStore((state) => state.userId);
 
-  const job = useJobsStore((state) => state.jobs.find((j) => j.id === jobId));
-  const mazdoors = useJobsStore((state) => state.mazdoors);
-  const customers = useJobsStore((state) => state.customers);
-  const jobAcks = useJobsStore((state) => state.jobAcks[jobId]);
-  const materialQuote = useJobsStore((state) => state.materialQuotes.find((q) => q.id === job?.materialQuoteId));
-  const proposeConfirmation = useJobsStore((state) => state.proposeConfirmation);
-  const acceptConfirmation = useJobsStore((state) => state.acceptConfirmation);
-  const startJob = useJobsStore((state) => state.startJob);
-  const markComplete = useJobsStore((state) => state.markComplete);
-  const raiseDispute = useJobsStore((state) => state.raiseDispute);
+  const { data: job } = useJob(jobId);
+  const proposeConfirmation = useProposeConfirmation();
+  const acceptConfirmation = useAcceptConfirmation();
+  const startJob = useStartJob();
+  const markComplete = useMarkComplete();
+  const raiseDispute = useRaiseDispute();
+
+  // Material quotes and SOS toggling have no backend endpoint yet — still
+  // the local mock store, deliberately (PLANNING.md's execution log).
   const toggleSos = useJobsStore((state) => state.toggleSos);
+  const materialQuote = useJobsStore((state) => state.materialQuotes.find((q) => q.id === job?.materialQuoteId));
   const proposeMaterialQuote = useJobsStore((state) => state.proposeMaterialQuote);
   const respondMaterialQuote = useJobsStore((state) => state.respondMaterialQuote);
+
+  const counterpartId = job ? (role === 'mazdoor' ? job.customerId : job.mazdoorId) : null;
+  const { data: counterpart } = usePublicProfile(counterpartId);
 
   const [priceInput, setPriceInput] = useState('');
   const [pinInput, setPinInput] = useState('');
@@ -67,6 +79,7 @@ export function JobDetailScreen({ route }: Props) {
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [quoteDescription, setQuoteDescription] = useState('');
   const [quoteAmount, setQuoteAmount] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
 
   if (!job) {
     return (
@@ -76,19 +89,28 @@ export function JobDetailScreen({ route }: Props) {
     );
   }
 
-  const mazdoor = mazdoors.find((m) => m.id === job.mazdoorId);
-  const customer = customers.find((c) => c.id === job.customerId);
-  const counterpart = role === 'mazdoor' ? customer : mazdoor;
+  const runAction = async (fn: () => Promise<unknown>) => {
+    setActionError(null);
+    try {
+      await fn();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
+    }
+  };
 
   const handleProposeTime = (time: Date) => {
     const price = Number(priceInput);
     if (!price || price <= 0) return;
-    proposeConfirmation(jobId, price, time);
+    runAction(() => proposeConfirmation.mutateAsync({ id: jobId, price, time }));
   };
 
-  const handleStartJob = () => {
-    const ok = startJob(jobId, pinInput);
-    setPinError(ok ? '' : 'Incorrect PIN — ask the customer again.');
+  const handleStartJob = async () => {
+    setPinError('');
+    try {
+      await startJob.mutateAsync({ id: jobId, pin: pinInput });
+    } catch (err) {
+      setPinError(err instanceof ApiError ? err.message : 'Incorrect PIN — ask the customer again.');
+    }
   };
 
   const handleSos = () => {
@@ -97,10 +119,11 @@ export function JobDetailScreen({ route }: Props) {
   };
 
   const handleSubmitDispute = () => {
-    if (!userId || !disputeCategory) return;
-    raiseDispute(jobId, userId, disputeCategory, disputeDetails.trim() || null);
-    setDisputeCategory(null);
-    setDisputeDetails('');
+    if (!disputeCategory) return;
+    runAction(() => raiseDispute.mutateAsync({ id: jobId, category: disputeCategory, details: disputeDetails.trim() || null })).then(() => {
+      setDisputeCategory(null);
+      setDisputeDetails('');
+    });
   };
 
   const handleSubmitQuote = () => {
@@ -127,8 +150,10 @@ export function JobDetailScreen({ route }: Props) {
 
       {/* Open Chat lives here, once, for any job with a counterpart assigned — available to both roles across
           every status (negotiating through disputed), not just mid-negotiation or in-progress. Workers.pdf §14.1:
-          "Job complete: chat remains open for post-completion communication." */}
-      {counterpart && (
+          "Job complete: chat remains open for post-completion communication." Phone number is deliberately not
+          shown — ARCHITECTURE.md §7: visible to Ustavia's backend/CRM only, never the counterparty; apps/api's
+          GET /users/:id/public doesn't return one either. */}
+      {counterpartId && (
         <Card variant="flat" style={{ marginTop: spacing.md, gap: spacing.sm }}>
           <View style={styles.counterpartRow}>
             <View style={[styles.avatar, { backgroundColor: colors.surface, borderRadius: radii.full }]}>
@@ -138,15 +163,19 @@ export function JobDetailScreen({ route }: Props) {
               <Text style={{ color: colors.textMuted, fontSize: typography.size.xs }}>
                 {role === 'mazdoor' ? 'Customer' : 'Mazdoor'}
               </Text>
-              <Text style={{ color: colors.textPrimary, fontFamily: typography.headingWeights.semibold }}>{counterpart.phone}</Text>
+              <Text style={{ color: colors.textPrimary, fontFamily: typography.headingWeights.semibold }}>
+                {role === 'mazdoor' ? 'Assigned customer' : 'Assigned Mazdoor'}
+              </Text>
             </View>
-            {role === 'customer' && mazdoor?.tier && mazdoor.ratingAvg != null && (
-              <RatingBadge tier={mazdoor.tier} ratingAvg={mazdoor.ratingAvg} />
+            {role === 'customer' && counterpart?.tier && counterpart.ratingAvg != null && (
+              <RatingBadge tier={counterpart.tier} ratingAvg={counterpart.ratingAvg} />
             )}
           </View>
           <Button label="Open Chat" variant="trust" size="md" icon={MessageCircle} onPress={() => navigation.navigate('Chat', { jobId })} />
         </Card>
       )}
+
+      {actionError && <Text style={{ color: colors.danger, marginTop: spacing.sm, fontSize: typography.size.sm }}>{actionError}</Text>}
 
       {job.agreedPrice != null && (
         <Text style={{ color: colors.textSecondary, marginTop: spacing.md }}>
@@ -169,17 +198,21 @@ export function JobDetailScreen({ route }: Props) {
           />
           <View style={[styles.rowGap, { marginTop: spacing.sm }]}>
             <View style={{ flex: 1 }}>
-              <Button label="Today 5pm" onPress={() => handleProposeTime(atTime(0, 17))} disabled={!priceInput} />
+              <Button label="Today 5pm" onPress={() => handleProposeTime(atTime(0, 17))} disabled={!priceInput || proposeConfirmation.isPending} />
             </View>
             <View style={{ flex: 1 }}>
-              <Button label="Tomorrow 9am" onPress={() => handleProposeTime(atTime(1, 9))} disabled={!priceInput} />
+              <Button label="Tomorrow 9am" onPress={() => handleProposeTime(atTime(1, 9))} disabled={!priceInput || proposeConfirmation.isPending} />
             </View>
           </View>
         </View>
       )}
       {job.status === 'negotiating' && job.agreedPrice != null && role === 'customer' && (
         <View style={styles.section}>
-          <Button label="Accept these terms" onPress={() => acceptConfirmation(jobId)} />
+          <Button
+            label="Accept these terms"
+            loading={acceptConfirmation.isPending}
+            onPress={() => runAction(() => acceptConfirmation.mutateAsync(jobId))}
+          />
         </View>
       )}
       {job.status === 'negotiating' && job.agreedPrice != null && role === 'mazdoor' && (
@@ -211,7 +244,7 @@ export function JobDetailScreen({ route }: Props) {
             icon={Lock}
           />
           <View style={{ marginTop: spacing.sm }}>
-            <Button label="Start Job" onPress={handleStartJob} disabled={pinInput.length !== 4} />
+            <Button label="Start Job" loading={startJob.isPending} onPress={handleStartJob} disabled={pinInput.length !== 4} />
           </View>
         </View>
       )}
@@ -229,7 +262,8 @@ export function JobDetailScreen({ route }: Props) {
             <Text style={styles.sosLabel}>SOS</Text>
           </Pressable>
 
-          {/* Material Quote — docx Finance section: mid-job parts cost, funded separately from labor price */}
+          {/* Material Quote — docx Finance section: mid-job parts cost, funded separately from labor price.
+              Still local-only (no backend endpoint for this yet). */}
           <Text
             style={[
               styles.sectionTitle,
@@ -304,25 +338,24 @@ export function JobDetailScreen({ route }: Props) {
           >
             Mark complete
           </Text>
-          <Text style={{ color: colors.textMuted, fontSize: typography.size.xs, marginBottom: spacing.sm }}>
-            Demo note: normally each party marks complete on their own device.
-          </Text>
           <View style={styles.rowGap}>
             <View style={{ flex: 1 }}>
               <Button
-                label={jobAcks?.customerAck ? 'Customer done' : 'Mark complete (Customer)'}
+                label={job.customerAck ? 'Customer done' : 'Mark complete (Customer)'}
                 variant="trust"
-                icon={jobAcks?.customerAck ? CheckCircle2 : undefined}
-                disabled={jobAcks?.customerAck}
-                onPress={() => markComplete(jobId, 'customer')}
+                icon={job.customerAck ? CheckCircle2 : undefined}
+                disabled={job.customerAck || role !== 'customer'}
+                loading={markComplete.isPending}
+                onPress={() => runAction(() => markComplete.mutateAsync(jobId))}
               />
             </View>
             <View style={{ flex: 1 }}>
               <Button
-                label={jobAcks?.mazdoorAck ? 'Mazdoor done' : 'Mark complete (Mazdoor)'}
-                icon={jobAcks?.mazdoorAck ? CheckCircle2 : undefined}
-                disabled={jobAcks?.mazdoorAck}
-                onPress={() => markComplete(jobId, 'mazdoor')}
+                label={job.mazdoorAck ? 'Mazdoor done' : 'Mark complete (Mazdoor)'}
+                icon={job.mazdoorAck ? CheckCircle2 : undefined}
+                disabled={job.mazdoorAck || role !== 'mazdoor'}
+                loading={markComplete.isPending}
+                onPress={() => runAction(() => markComplete.mutateAsync(jobId))}
               />
             </View>
           </View>
@@ -395,7 +428,7 @@ export function JobDetailScreen({ route }: Props) {
                 ))}
               </View>
               <TextField placeholder="Describe what happened (optional)" value={disputeDetails} onChangeText={setDisputeDetails} />
-              <Button label="Submit Complaint" variant="danger" onPress={handleSubmitDispute} />
+              <Button label="Submit Complaint" variant="danger" loading={raiseDispute.isPending} onPress={handleSubmitDispute} />
             </View>
           )}
         </View>

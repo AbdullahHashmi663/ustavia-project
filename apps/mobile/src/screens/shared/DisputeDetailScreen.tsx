@@ -3,8 +3,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CheckCircle2 } from 'lucide-react-native';
 import { DISPUTE_STATUSES, type DisputeStatus } from '@ustavia/shared';
 
+import { useJobDisputes } from '../../api/hooks';
 import type { AppStackParamList } from '../../navigation/types';
-import { useJobsStore } from '../../store/jobs';
 import { useTheme } from '../../theme/ThemeProvider';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'DisputeDetail'>;
@@ -30,9 +30,8 @@ const STATUS_LABEL: Record<DisputeStatus, string> = {
 export function DisputeDetailScreen({ route }: Props) {
   const { jobId } = route.params;
   const { colors, radii, spacing, typography } = useTheme();
-  const dispute = useJobsStore((state) =>
-    [...state.disputes].reverse().find((d) => d.jobId === jobId),
-  );
+  const { data: disputes = [] } = useJobDisputes(jobId);
+  const dispute = disputes[0]; // listDisputes returns most-recent-first (apps/api's JobsService.listDisputesForJob)
 
   if (!dispute) {
     return (

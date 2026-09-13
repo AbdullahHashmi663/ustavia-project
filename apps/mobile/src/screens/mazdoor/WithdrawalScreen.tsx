@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DEFAULT_WITHDRAWAL_FEE_PERCENTAGE, MINIMUM_WITHDRAWAL_AMOUNT } from '@ustavia/shared';
 import { Building2, Check, CheckCircle2, Info } from 'lucide-react-native';
 
+import { useWallet } from '../../api/hooks';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
@@ -14,12 +15,20 @@ import { useAuthStore } from '../../store/auth';
 import { useJobsStore } from '../../store/jobs';
 import { useTheme } from '../../theme/ThemeProvider';
 
-/** Workers.pdf §8.2 Withdrawal Screen. */
+/**
+ * Workers.pdf §8.2 Withdrawal Screen. "Available to withdraw" reads the
+ * real balance (apps/api's PaymentsModule) so it matches WalletScreen, but
+ * there's no real withdrawal endpoint yet — confirming here only records a
+ * local ledger entry (`useJobsStore`'s mock `withdraw`), so the real
+ * balance shown next time doesn't actually go down. Same "known
+ * simplification, clearly labeled" pattern as JobDetailScreen's dual-ack
+ * demo note.
+ */
 export function WithdrawalScreen() {
   const { colors, radii, spacing, typography } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const userId = useAuthStore((state) => state.userId);
-  const walletLedger = useJobsStore((state) => state.walletLedger);
+  const { data: wallet } = useWallet();
   // See ChatScreen.tsx's comment — filter outside the selector, not inside it.
   const allBankAccounts = useJobsStore((state) => state.bankAccounts);
   const bankAccounts = allBankAccounts.filter((a) => a.mazdoorId === userId);
@@ -30,7 +39,7 @@ export function WithdrawalScreen() {
   const [authorized, setAuthorized] = useState(false);
   const [done, setDone] = useState<{ amount: number; bankName: string } | null>(null);
 
-  const balance = walletLedger.filter((e) => e.mazdoorId === userId).reduce((sum, e) => sum + e.amount, 0);
+  const balance = wallet?.balance ?? 0;
   const amount = Number(amountInput) || 0;
   const fee = Math.round(amount * (DEFAULT_WITHDRAWAL_FEE_PERCENTAGE / 100));
   const willReceive = Math.max(amount - fee, 0);
@@ -135,7 +144,12 @@ export function WithdrawalScreen() {
         <Text style={{ color: colors.textPrimary, flex: 1 }}>I authorize this withdrawal</Text>
       </Pressable>
 
-      <View style={{ marginTop: spacing.xl }}>
+      <Text style={{ color: colors.textMuted, fontSize: typography.size.xs, marginTop: spacing.sm }}>
+        Demo note: payouts to a real bank account (Raast/1-Link) aren't wired up yet, so confirming below won't
+        actually reduce the balance shown above next time you open this.
+      </Text>
+
+      <View style={{ marginTop: spacing.lg }}>
         <Button
           label="Confirm Withdrawal"
           disabled={!canSubmit}

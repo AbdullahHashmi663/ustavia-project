@@ -1,12 +1,15 @@
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useQueries } from '@tanstack/react-query';
 import { MessageCircle, UserRound } from 'lucide-react-native';
+import type { ChatMessage } from '@ustavia/shared';
 
+import { listMessages } from '../../api/chat';
+import { useJobsList } from '../../api/hooks';
 import { EmptyState } from '../../components/EmptyState';
 import type { AppStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/auth';
-import { useJobsStore } from '../../store/jobs';
 import { useTheme } from '../../theme/ThemeProvider';
 
 /**
@@ -14,32 +17,34 @@ import { useTheme } from '../../theme/ThemeProvider';
  * status — Worker.pdf §14.1: "Job complete: chat remains open for
  * post-completion communication." Chat isn't gated to negotiating/in_progress
  * for either role; this is the always-reachable inbox both sides get.
+ *
+ * There's no bulk "last message per job" endpoint, so this fires one
+ * `GET /jobs/:id/chat` per thread via `useQueries` — fine at MVP scale
+ * (a handful of jobs per user), worth revisiting with a real inbox
+ * endpoint if that ever stops being true.
  */
 export function MessagesScreen() {
   const { colors, radii, spacing, shadows, typography } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const role = useAuthStore((state) => state.role);
-  const userId = useAuthStore((state) => state.userId);
-  const jobs = useJobsStore((state) => state.jobs);
-  const chatMessages = useJobsStore((state) => state.chatMessages);
-  const mazdoors = useJobsStore((state) => state.mazdoors);
-  const customers = useJobsStore((state) => state.customers);
+  const { data: jobs = [] } = useJobsList({ mine: true });
 
-  const myJobs = jobs.filter((job) =>
-    role === 'mazdoor' ? job.mazdoorId === userId : job.customerId === userId && job.mazdoorId != null,
-  );
+  const myJobs = jobs.filter((job) => job.mazdoorId != null);
+
+  const messageQueries = useQueries({
+    queries: myJobs.map((job) => ({
+      queryKey: ['chat', job.id],
+      queryFn: () => listMessages(job.id),
+      staleTime: 10_000,
+    })),
+  });
 
   const threads = myJobs
-    .map((job) => {
-      const counterpart =
-        role === 'mazdoor' ? customers.find((c) => c.id === job.customerId) : mazdoors.find((m) => m.id === job.mazdoorId);
-      const jobMessages = chatMessages
-        .filter((m) => m.jobId === job.id)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      const lastMessage = jobMessages[0] ?? null;
+    .map((job, index) => {
+      const messages: ChatMessage[] = messageQueries[index]?.data ?? [];
+      const lastMessage = [...messages].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] ?? null;
       return {
         job,
-        counterpart,
         lastMessage,
         sortKey: lastMessage ? new Date(lastMessage.createdAt).getTime() : new Date(job.createdAt).getTime(),
       };
@@ -69,7 +74,7 @@ export function MessagesScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.textPrimary, fontFamily: typography.headingWeights.semibold, fontSize: typography.size.base }}>
-                {item.counterpart?.phone ?? 'Unknown'}
+                {role === 'mazdoor' ? 'Customer' : 'Mazdoor'}
               </Text>
               <Text style={{ color: colors.textMuted, fontSize: typography.size.xs, marginTop: 1 }} numberOfLines={1}>
                 {item.job.description}

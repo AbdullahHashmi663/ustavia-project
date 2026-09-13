@@ -3,29 +3,31 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Briefcase, RefreshCw } from 'lucide-react-native';
 
+import { useJobsList, useNegotiateJob } from '../../api/hooks';
 import { EmptyState } from '../../components/EmptyState';
 import { IconButton } from '../../components/IconButton';
 import { JobCard } from '../../components/JobCard';
 import type { AppStackParamList } from '../../navigation/types';
-import { useAuthStore } from '../../store/auth';
-import { useJobsStore } from '../../store/jobs';
 import { useTheme } from '../../theme/ThemeProvider';
-import { estimateDistanceKm } from '../../utils/geo';
 
 export function DashboardScreen() {
   const { colors, spacing, typography } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const userId = useAuthStore((state) => state.userId);
-  const jobs = useJobsStore((state) => state.jobs);
-  const mazdoors = useJobsStore((state) => state.mazdoors);
-  const startNegotiation = useJobsStore((state) => state.startNegotiation);
+  const { data: postedJobs = [], isLoading, refetch, isRefetching } = useJobsList({ status: 'posted' });
+  const negotiate = useNegotiateJob();
 
-  const me = mazdoors.find((m) => m.id === userId);
-  const postedJobs = jobs.filter((job) => job.status === 'posted');
-
-  const handleOpen = (jobId: string) => {
-    const job = postedJobs.find((j) => j.id === jobId);
-    if (job && userId) startNegotiation(jobId, userId);
+  const handleOpen = async (jobId: string) => {
+    // Opening a posted job claims it — apps/api's POST /jobs/:id/negotiate
+    // sets mazdoorId to the caller and moves it to "negotiating", same as
+    // the mock store did. Awaited so JobDetailScreen never fetches a job
+    // that's still mid-transition.
+    try {
+      await negotiate.mutateAsync(jobId);
+    } catch {
+      // Someone else may have already claimed it between the list load and
+      // this tap — fall through to JobDetail regardless, it'll show the
+      // job's real current state.
+    }
     navigation.navigate('JobDetail', { jobId });
   };
 
@@ -40,29 +42,36 @@ export function DashboardScreen() {
             {postedJobs.length} job{postedJobs.length === 1 ? '' : 's'} nearby
           </Text>
         </View>
-        <IconButton icon={RefreshCw} onPress={() => {}} variant="filled" accessibilityLabel="Refresh job list" />
+        <IconButton
+          icon={RefreshCw}
+          onPress={() => refetch()}
+          variant="filled"
+          accessibilityLabel="Refresh job list"
+        />
       </View>
 
       <FlatList
         data={postedJobs}
         keyExtractor={(job) => job.id}
+        refreshing={isRefetching}
+        onRefresh={refetch}
         contentContainerStyle={{ gap: spacing.md, marginTop: spacing.lg, flexGrow: 1 }}
-        renderItem={({ item }) => {
-          const distance = me ? estimateDistanceKm(me.workshopLocation ?? item.location, item.location) : 0;
-          return (
-            <JobCard
-              title={item.description}
-              meta={`~${distance.toFixed(1)} km away`}
-              onPress={() => handleOpen(item.id)}
-            />
-          );
-        }}
+        renderItem={({ item }) => (
+          // No "~X km away" here anymore — that needs the Mazdoor's own
+          // workshopLocation (GET /users/me, not fetched on this screen)
+          // compared against apps/api's near-query distanceKm, neither of
+          // which is wired up yet. Area-only visibility (no pinpoint
+          // address) still holds — ARCHITECTURE.md §5.
+          <JobCard title={item.description} meta="Posted nearby" onPress={() => handleOpen(item.id)} />
+        )}
         ListEmptyComponent={
-          <EmptyState
-            icon={Briefcase}
-            title="No jobs posted nearby"
-            description="New jobs from customers in your area will show up here as soon as they're posted."
-          />
+          isLoading ? null : (
+            <EmptyState
+              icon={Briefcase}
+              title="No jobs posted nearby"
+              description="New jobs from customers in your area will show up here as soon as they're posted."
+            />
+          )
         }
       />
     </View>
