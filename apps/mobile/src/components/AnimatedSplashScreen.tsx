@@ -28,7 +28,7 @@ interface AnimatedSplashScreenProps {
 /**
  * The first thing anyone sees — replaces expo-splash-screen's static native
  * splash the instant JS takes over (App.tsx calls SplashScreen.hideAsync()
- * as soon as this mounts) with a slow-breathing brand-orange blob (recolored
+ * as soon as this mounts) with a slow-breathing brand-blue blob (recolored
  * from assets/blob-haikei.svg), soft sonar rings, and the logo/wordmark
  * settling into place — "elegant" meaning restrained, slow easing and a
  * handful of soft motions rather than anything bouncy or busy.
@@ -146,9 +146,9 @@ export function AnimatedSplashScreen({ onFinish, ready }: AnimatedSplashScreenPr
         >
           <Defs>
             <LinearGradient id="splashBlobGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor={colors.brandOrangeLight} />
-              <Stop offset="55%" stopColor={colors.brandOrange} />
-              <Stop offset="100%" stopColor={colors.brandOrangeDark} />
+              <Stop offset="0%" stopColor={colors.brandBlueLight} />
+              <Stop offset="55%" stopColor={colors.brandBlue} />
+              <Stop offset="100%" stopColor={colors.brandBlueDark} />
             </LinearGradient>
           </Defs>
           <Path d={BLOB_PATH} fill="url(#splashBlobGrad)" transform="translate(288 332)" />
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     height: 168,
     borderRadius: 999,
     borderWidth: 1.5,
-    borderColor: colors.brandOrange,
+    borderColor: colors.brandBlue,
   },
   logo: {
     width: 148,
