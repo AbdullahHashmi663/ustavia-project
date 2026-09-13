@@ -23,7 +23,15 @@
     },
     "plugins": [
       "expo-font",
-      "expo-splash-screen"
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/logo-ustavia-removebg-preview.png",
+          "imageWidth": 148,
+          "resizeMode": "contain",
+          "backgroundColor": "#F9F8F5"
+        }
+      ]
     ]
   }
 }

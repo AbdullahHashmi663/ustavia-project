@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   live database. Neither `apps/mobile` nor `apps/admin` calls this API
   yet — both still use their own local mock stores; that integration is
   separate, not-yet-started work.
+- `apps/mobile`: an animated launch splash screen (`AnimatedSplashScreen`)
+  replacing the blank pre-fonts-load gap — a slow-breathing brand-gradient
+  blob (recolored from the app's own Haikei SVG assets), pulsing sonar
+  rings, and the logo/wordmark settling into place, handed off seamlessly
+  from `expo-splash-screen`'s native splash.
 
 ### Planned
 - Dual-role toggle (one account acting as both Customer and Mazdoor) —
