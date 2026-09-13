@@ -50,5 +50,15 @@ coverage/
 *.pem
 .turbo/
 
-# Claude Code — personal/local settings, never shared via the repo
+# Claude Code — personal/local settings and synced skill content, never
+# shared via the repo (skills sync per-machine from claude.ai, not project source)
 .claude/settings.local.json
+.claude/skills/
+apps/.claude/
+
+# packages/shared is TS-only; a *.js next to a *.ts here means a stray
+# `tsc` output that landed in src/ instead of dist/ (bit us once — see
+# PLANNING.md) — never intentional source, always ignore.
+packages/shared/src/**/*.js
+packages/shared/src/**/*.js.map
+packages/shared/src/**/*.d.ts

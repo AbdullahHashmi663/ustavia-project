@@ -3,7 +3,17 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "declaration": true
+    "declaration": true,
+    // Overrides the base config's `module: "ESNext"` for the *build* specifically:
+    // apps/mobile and apps/admin never read dist/ (their bundlers resolve
+    // @ustavia/shared straight to src/ via tsconfig.base.json's `paths`), but
+    // apps/api's plain `node dist/main.js` run needs real, directly-requireable
+    // CommonJS here — an ESM build's extensionless directory re-exports
+    // (`export * from './types'`) fail Node's strict ESM resolution
+    // (ERR_UNSUPPORTED_DIR_IMPORT) even though the same code works fine when a
+    // bundler is doing the resolving.
+    "module": "CommonJS",
+    "moduleResolution": "Node"
   },
   "include": ["src"]
 }

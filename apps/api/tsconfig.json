@@ -9,7 +9,18 @@
     "outDir": "dist",
     "rootDir": "src",
     "declaration": false,
-    "noUncheckedIndexedAccess": false
+    "noUncheckedIndexedAccess": false,
+    // Overrides tsconfig.base.json's `@ustavia/shared` -> packages/shared/src/index.ts
+    // alias (which apps/mobile and apps/admin rely on for instant-reflect editing via
+    // their bundlers) with an empty object, so apps/api falls through to normal
+    // node_modules resolution instead: node_modules/@ustavia/shared (workspace symlink)
+    // -> packages/shared's package.json main/types -> packages/shared/dist/*. Resolving
+    // through a node_modules path exempts it from the rootDir check below, and — unlike
+    // the raw .ts source — dist/index.js is real, plain-Node-requireable JS, which a
+    // `node dist/main.js` production run needs (ts-node handles raw .ts fine in dev
+    // watch mode, but plain `node` cannot). Run `npm run build --workspace=packages/shared`
+    // after editing packages/shared/src for apps/api to see the change.
+    "paths": {}
   },
   "include": ["src"]
 }
