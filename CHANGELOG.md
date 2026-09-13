@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `apps/api` now connects to a hosted Supabase Postgres instance (Session
+  Pooler) for local/dev. Connection-only — no schema/migrations exist yet.
+
 ### Planned
 - Dual-role toggle (one account acting as both Customer and Mazdoor) —
   deferred from MVP; current release locks one role per account at signup.

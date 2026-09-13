@@ -72,6 +72,16 @@ transactions, especially around money movement. PostGIS gives us
 efficient "distance from Mazdoor's workshop to job location" queries
 without a separate geo service.
 
+**Hosting (as of 2026-09-13):** `apps/api` connects to a hosted Supabase
+Postgres instance via the Session Pooler (`DATABASE_URL` in
+`apps/api/.env`, git-ignored — see `.env.example` for the format and the
+IPv6-only-direct-host gotcha). No schema exists yet (`entities: []` in
+`app.module.ts`); connecting was the first step, not a migration. The
+`postgis` extension's availability on this instance hasn't been verified —
+enable it (Database → Extensions in the Supabase dashboard, or
+`CREATE EXTENSION IF NOT EXISTS postgis;`) before the first migration that
+uses a geography column.
+
 ### 2.4 Redis + Socket.IO for realtime
 
 Chat, SOS alerts, and live job status need to feel instant and work
