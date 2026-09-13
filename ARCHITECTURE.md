@@ -114,6 +114,26 @@ lands straight in the app. `useAuthStore.userId` is now the real database
 UUID (the earlier demo-persona bridge was retired once the job/chat
 screens below started calling the real API).
 
+**Password login (as of 2026-09-13):** OTP still proves phone ownership
+once at signup, but a returning user doesn't have to request and retype a
+fresh SMS code every time — `users.passwordHash` (nullable, most accounts
+still won't have one) plus `POST /auth/password` (set/change, requires an
+existing session) and `POST /auth/login` (phone + password, no OTP,
+issuing the same JWT shape `verifyOtp` does). Every response carrying a
+user object goes through `toSafeUser` (`users.service.ts`) first, which
+strips `passwordHash` and adds a `passwordSet: boolean` — this closed a
+real latent leak: `GET /users/me` and `POST /auth/otp/verify` were both
+already returning the raw `UserEntity` before `passwordHash` existed as a
+column, which would have shipped a bcrypt hash to the client the moment it
+did. `apps/mobile`'s `LoginScreen` (phone + password) and
+`SetPasswordScreen` (a one-time, skippable prompt right after a fresh
+`verifyOtp`/`login` for an account with no password set yet, gated by that
+same `passwordSet` flag) use this; `ChangePasswordScreen` (from
+`SettingsScreen`) covers setting one later or changing an existing one.
+No "forgot password" flow yet, and `POST /auth/login` has no rate
+limiting — a real gap before this holds real money, not a blocker for the
+current pass.
+
 **Jobs, chat, and wallet (as of 2026-09-13):** `apps/mobile`'s full job
 lifecycle — post, list, negotiate, propose, confirm, start, complete, pay,
 dispute — and chat (polled every 4s, no Socket.IO client yet) call the
@@ -208,6 +228,7 @@ Single table for both roles.
 | `workshop_location` | geography point, `mazdoor` only |
 | `rating_avg`, `tier` | `mazdoor` only — bronze/silver/gold/diamond |
 | `wallet_balance` | `mazdoor` only, derived from `wallet_ledger` |
+| `password_hash` | nullable — optional secondary credential, never serialized to a client (`toSafeUser`) |
 | `created_at`, `updated_at` | |
 
 ### `jobs`

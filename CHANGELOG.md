@@ -39,6 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (role/rating/tier only, no phone/email). Bank accounts, withdrawal,
   material quotes, and SOS still have no backend endpoint and remain on
   the local mock store; `apps/admin` remains entirely unwired.
+- Password login, for both roles: OTP still proves phone ownership once
+  at signup, but a returning user can now set a password
+  (`POST /auth/password`) and log in with it thereafter
+  (`POST /auth/login`, phone + password, no SMS code needed).
+  `apps/mobile` gained `LoginScreen`, a one-time skippable
+  `SetPasswordScreen` right after signup, and a `ChangePasswordScreen`
+  from Settings. No password-reset flow or rate limiting on the login
+  endpoint yet.
 
 ### Planned
 - Dual-role toggle (one account acting as both Customer and Mazdoor) —
