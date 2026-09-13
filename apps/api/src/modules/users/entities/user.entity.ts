@@ -35,6 +35,17 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 16, default: 'pending' })
   verificationStatus!: VerificationStatus;
 
+  /**
+   * Optional secondary credential — phone OTP is still the only way to
+   * create an account (proves phone ownership) and always works for
+   * login, but re-requesting/typing a fresh code every time is friction
+   * for a returning user. Set once via `POST /auth/password`, then
+   * `POST /auth/login` (phone + password) skips OTP entirely. Never
+   * serialized to a client — see `toSafeUser` in users.service.ts.
+   */
+  @Column({ type: 'varchar', nullable: true })
+  passwordHash!: string | null;
+
   @Column({ type: 'jsonb', nullable: true })
   workshopLocation!: { latitude: number; longitude: number } | null;
 

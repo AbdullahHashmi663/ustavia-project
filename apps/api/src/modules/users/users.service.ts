@@ -5,6 +5,14 @@ import { Repository } from 'typeorm';
 import { UserEntity } from './entities/user.entity';
 import type { UpdateMeDto } from './dto/update-me.dto';
 
+/** `UserEntity` minus `passwordHash`, plus a `passwordSet` flag so a client can offer "set up a password" only once. Every response that carries a full user object goes through `toSafeUser` first — the hash itself must never reach a client. */
+export type SafeUser = Omit<UserEntity, 'passwordHash'> & { passwordSet: boolean };
+
+export function toSafeUser(user: UserEntity): SafeUser {
+  const { passwordHash, ...safe } = user;
+  return { ...safe, passwordSet: passwordHash != null };
+}
+
 @Injectable()
 export class UsersService {
   constructor(@InjectRepository(UserEntity) private readonly users: Repository<UserEntity>) {}
