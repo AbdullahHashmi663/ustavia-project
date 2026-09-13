@@ -94,8 +94,10 @@ balance settling to the exact expected commission/withholding split).
 admin app's own separate mock store, ARCHITECTURE.md §3's `HrmModule`/
 `FinanceModule`) don't have API-layer entities yet — apps/admin isn't
 wired to this API at all, it still reads its own local Zustand mock store.
-`apps/mobile`'s auth flow is wired (next paragraph); its job/wallet/chat
-screens are not yet — see PLANNING.md's execution log.
+`apps/mobile`'s auth, job lifecycle, chat, and wallet-read are wired (see
+the Auth paragraph below and PLANNING.md's execution log); bank
+accounts/withdrawal/material quotes/SOS still have no endpoint and stay on
+`apps/mobile`'s local mock store.
 
 **Auth (as of 2026-09-13):** OTP request/verify + JWT issuance is real and
 working (`AuthModule`), but `SMS_PROVIDER_API_KEY` isn't wired to an actual
@@ -108,12 +110,26 @@ As of the mobile auth-wiring pass, `apps/mobile`'s Phone/OTP/RolePicker
 screens call these endpoints for real (`src/api/auth.ts`) instead of
 accepting any 6-digit code — the JWT is persisted (`useSessionStore`), and
 a returning already-`verified` user now skips the KYC/pending screens and
-lands straight in the app. One deliberate bridge: `useAuthStore`'s
-`userId` is still pinned to the existing `MOCK_MAZDOORS[0]`/
-`MOCK_CUSTOMERS[0]` demo persona rather than the real database id, because
-every job/wallet/chat screen still reads the local mock store keyed to
-those fixed ids — swap this the day those screens call the real API
-instead.
+lands straight in the app. `useAuthStore.userId` is now the real database
+UUID (the earlier demo-persona bridge was retired once the job/chat
+screens below started calling the real API).
+
+**Jobs, chat, and wallet (as of 2026-09-13):** `apps/mobile`'s full job
+lifecycle — post, list, negotiate, propose, confirm, start, complete, pay,
+dispute — and chat (polled every 4s, no Socket.IO client yet) call the
+real `JobsModule`/`ChatModule` for both roles; `WalletScreen` reads the
+real `PaymentsModule` balance. A job's counterpart is resolved via the new
+`GET /users/:id/public` (role/rating/tier only — no phone/email, per §7
+above; the mock UI previously showed the counterpart's phone directly,
+which was actually inconsistent with this section's own rule). Bank
+accounts, wallet withdrawal, material quotes, and SOS toggling have no
+backend endpoint at all yet and stay on `apps/mobile`'s local mock store
+— `WithdrawalScreen` reads the real balance for display/validation but its
+"Confirm Withdrawal" only records a local ledger entry, clearly labeled.
+CNIC and job photo/video upload have no S3 signed-upload endpoint, so
+neither is sent to the API yet; job location is still a randomized point
+near Karachi (no real device geolocation wired up). `apps/admin` remains
+entirely unwired.
 
 ### 2.4 Redis + Socket.IO for realtime
 

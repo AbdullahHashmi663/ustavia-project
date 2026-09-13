@@ -18,9 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (wallet ledger settlement) — and disputes (`JobsModule`), chat with
   real server-side phone/email redaction (`ChatModule`), and a wallet
   read model (`PaymentsModule`). First schema migration applied to the
-  live database. Neither `apps/mobile` nor `apps/admin` calls this API
-  yet — both still use their own local mock stores; that integration is
-  separate, not-yet-started work.
+  live database.
 - `apps/mobile`: an animated launch splash screen (`AnimatedSplashScreen`)
   replacing the blank pre-fonts-load gap — a slow-breathing brand-gradient
   blob (recolored from the app's own Haikei SVG assets), pulsing sonar
@@ -29,8 +27,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `apps/mobile`'s Phone/OTP/RolePicker screens now call the real
   `AuthModule` endpoints instead of accepting any 6-digit code — a real
   JWT is issued and persisted, and a returning already-verified user
-  skips the KYC/pending screens straight into the app. Job/wallet/chat
-  screens are still on the local mock store; that's the next slice.
+  skips the KYC/pending screens straight into the app.
+- `apps/mobile`'s full job lifecycle (post, list, negotiate, propose,
+  confirm, start, complete, pay, dispute), chat, and wallet balance now
+  call the real `JobsModule`/`ChatModule`/`PaymentsModule` for both
+  roles — verified live end-to-end via the real UI: a job posted by a
+  customer, claimed and priced by a Mazdoor, confirmed and started with
+  a real PIN, completed by both sides, and paid, settling the exact
+  expected commission/withholding split into the Mazdoor's real wallet.
+  New `GET /users/:id/public` endpoint resolves a job's counterpart
+  (role/rating/tier only, no phone/email). Bank accounts, withdrawal,
+  material quotes, and SOS still have no backend endpoint and remain on
+  the local mock store; `apps/admin` remains entirely unwired.
 
 ### Planned
 - Dual-role toggle (one account acting as both Customer and Mazdoor) —
