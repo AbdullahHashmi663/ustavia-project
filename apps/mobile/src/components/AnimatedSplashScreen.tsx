@@ -29,13 +29,14 @@ interface AnimatedSplashScreenProps {
  * The first thing anyone sees — replaces expo-splash-screen's static native
  * splash the instant JS takes over (App.tsx calls SplashScreen.hideAsync()
  * as soon as this mounts) with a brand-blue blob (recolored from
- * assets/blob-haikei.svg) that pops into view on mount and then breathes
- * gently, soft sonar rings, and the logo/wordmark settling into place.
+ * assets/blob-haikei.svg) that fades in and breathes gently, soft sonar
+ * rings, and the logo/wordmark settling into place.
  */
 export function AnimatedSplashScreen({ onFinish, ready }: AnimatedSplashScreenProps) {
-  // Starts small/invisible and pops out to full size on mount (spring
-  // overshoot), then hands off into the slow infinite breathing loop below.
-  const blobScale = useRef(new Animated.Value(0.4)).current;
+  // Starts at the breathing loop's own resting scale (no separate
+  // entrance scale animation — a bouncy spring here read as the blob
+  // "popping" more than once as it settled) and just fades in.
+  const blobScale = useRef(new Animated.Value(0.92)).current;
   const blobOpacity = useRef(new Animated.Value(0)).current;
   const ring1 = useRef(new Animated.Value(0)).current;
   const ring2 = useRef(new Animated.Value(0)).current;
@@ -48,20 +49,15 @@ export function AnimatedSplashScreen({ onFinish, ready }: AnimatedSplashScreenPr
   const containerOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Blob pops out on mount — a bouncy spring from small/invisible up past
-    // full size and settling back, then hands off into a slow infinite
-    // breathing loop so it doesn't go static once the pop is done.
-    Animated.parallel([
-      Animated.spring(blobScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true }),
-      Animated.timing(blobOpacity, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start(() => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(blobScale, { toValue: 1.06, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-          Animated.timing(blobScale, { toValue: 0.92, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        ]),
-      ).start();
-    });
+    // Blob just fades in at its resting scale, then breathes gently forever
+    // — no separate entrance scale/bounce.
+    Animated.timing(blobOpacity, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(blobScale, { toValue: 1.06, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(blobScale, { toValue: 0.92, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    ).start();
 
     // Soft sonar rings expanding out from behind the logo, staggered.
     const pulse = (value: Animated.Value, delay: number) =>
