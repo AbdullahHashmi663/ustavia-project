@@ -1,39 +1,46 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Phone } from 'lucide-react-native';
 
 import { Button } from '../../../components/Button';
+import { Logo } from '../../../components/Logo';
+import { TextField } from '../../../components/TextField';
 import { useTheme } from '../../../theme/ThemeProvider';
 import type { AuthStackParamList } from '../../../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'PhoneEntry'>;
 
 export function PhoneEntryScreen({ navigation }: Props) {
-  const { colors } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const [phone, setPhone] = useState('');
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.white }]}>
-      <Text style={[styles.heading, { color: colors.textPrimary }]}>Enter your phone number</Text>
-      <Text style={[styles.subheading, { color: colors.textSecondary }]}>
+    <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
+      <Logo size={56} />
+      <View style={{ height: spacing.xl }} />
+      <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: 24 }]}>
+        Enter your phone number
+      </Text>
+      <Text style={[styles.subheading, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg }]}>
         We'll text you a one-time code to verify it's you.
       </Text>
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.textPrimary }]}
-        placeholder="+92XXXXXXXXXX"
-        placeholderTextColor={colors.textMuted}
+      <TextField
+        placeholder="+92 3XX XXXXXXX"
         keyboardType="phone-pad"
         value={phone}
         onChangeText={setPhone}
+        icon={Phone}
       />
-      <Button label="Send OTP" onPress={() => navigation.navigate('Otp', { phone })} />
+      <View style={{ marginTop: spacing.lg }}>
+        <Button label="Send OTP" disabled={phone.trim().length < 10} onPress={() => navigation.navigate('Otp', { phone })} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: 'center', gap: 12 },
-  heading: { fontFamily: 'Poppins_700Bold', fontSize: 24 },
-  subheading: { fontSize: 14, marginBottom: 12 },
-  input: { borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16, marginBottom: 8 },
+  container: { flex: 1 },
+  heading: {},
+  subheading: { fontSize: 14 },
 });

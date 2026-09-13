@@ -1,22 +1,24 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { CheckCircle2, HardHat, UserSearch } from 'lucide-react-native';
 import type { UserRole } from '@ustavia/shared';
 
 import { Button } from '../../../components/Button';
+import { Logo } from '../../../components/Logo';
 import { useAuthStore } from '../../../store/auth';
 import { useTheme } from '../../../theme/ThemeProvider';
 import type { AuthStackParamList } from '../../../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'RolePicker'>;
 
-const ROLE_OPTIONS: Array<{ role: UserRole; title: string; description: string }> = [
-  { role: 'mazdoor', title: "I'm a Mazdoor", description: 'I do jobs and get paid for my work.' },
-  { role: 'customer', title: "I'm a Customer", description: 'I need to hire help for a job.' },
+const ROLE_OPTIONS: Array<{ role: UserRole; title: string; description: string; icon: typeof HardHat }> = [
+  { role: 'mazdoor', title: "I'm a Mazdoor", description: 'I do jobs and get paid for my work.', icon: HardHat },
+  { role: 'customer', title: "I'm a Customer", description: 'I need to hire help for a job.', icon: UserSearch },
 ];
 
 export function RolePickerScreen({ navigation }: Props) {
-  const { colors } = useTheme();
+  const { colors, radii, spacing, typography } = useTheme();
   const setRole = useAuthStore((state) => state.setRole);
   const [selected, setSelected] = useState<UserRole | null>(null);
 
@@ -24,32 +26,46 @@ export function RolePickerScreen({ navigation }: Props) {
   const tintFor = (role: UserRole) => (role === 'mazdoor' ? colors.brandOrangeLight : colors.brandBlueLight);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.white }]}>
-      <Text style={[styles.heading, { color: colors.textPrimary }]}>How will you use Ustavia?</Text>
-      <Text style={[styles.subheading, { color: colors.textSecondary }]}>
+    <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
+      <Logo size={48} />
+      <View style={{ height: spacing.lg }} />
+      <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: 24 }]}>
+        How will you use Ustavia?
+      </Text>
+      <Text style={[styles.subheading, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg }]}>
         This choice is permanent for this account.
       </Text>
 
-      <View style={styles.cards}>
+      <View style={{ gap: spacing.md, marginBottom: spacing.lg }}>
         {ROLE_OPTIONS.map((option) => {
           const isSelected = selected === option.role;
+          const Icon = option.icon;
           return (
             <Pressable
               key={option.role}
               onPress={() => setSelected(option.role)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
               style={[
                 styles.card,
                 {
                   borderColor: isSelected ? accentFor(option.role) : colors.border,
                   backgroundColor: isSelected ? tintFor(option.role) : colors.white,
+                  borderRadius: radii.lg,
+                  padding: spacing.lg,
                 },
               ]}
             >
-              <View style={[styles.dot, { backgroundColor: accentFor(option.role) }]} />
-              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{option.title}</Text>
-              <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
-                {option.description}
+              <View style={styles.cardTopRow}>
+                <View style={[styles.iconCircle, { backgroundColor: colors.white, borderRadius: radii.full }]}>
+                  <Icon size={22} color={accentFor(option.role)} />
+                </View>
+                {isSelected && <CheckCircle2 size={20} color={accentFor(option.role)} />}
+              </View>
+              <Text style={[styles.cardTitle, { color: colors.textPrimary, fontFamily: typography.headingWeights.semibold, marginTop: spacing.sm }]}>
+                {option.title}
               </Text>
+              <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 2 }]}>{option.description}</Text>
             </Pressable>
           );
         })}
@@ -69,12 +85,12 @@ export function RolePickerScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: 'center', gap: 16 },
-  heading: { fontFamily: 'Poppins_700Bold', fontSize: 24 },
-  subheading: { fontSize: 14, marginBottom: 8 },
-  cards: { gap: 12, marginBottom: 12 },
-  card: { borderWidth: 2, borderRadius: 16, padding: 18, gap: 6 },
-  dot: { width: 10, height: 10, borderRadius: 999, marginBottom: 4 },
-  cardTitle: { fontFamily: 'Poppins_600SemiBold', fontSize: 17 },
+  container: { flex: 1 },
+  heading: {},
+  subheading: { fontSize: 14 },
+  card: { borderWidth: 2 },
+  cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  iconCircle: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { fontSize: 17 },
   cardDescription: { fontSize: 13 },
 });

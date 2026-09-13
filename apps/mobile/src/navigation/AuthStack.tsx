@@ -11,10 +11,10 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export function AuthStack() {
   return (
-    // TEMP initialRouteName: real entry is PhoneEntry once OTP/SMS_PROVIDER_API_KEY is wired up
-    // (see README env vars) — RolePicker first makes the themed screen reachable immediately
-    // during this scaffolding pass, per this milestone's acceptance criteria.
-    <Stack.Navigator initialRouteName="RolePicker" screenOptions={{ headerShown: false }}>
+    // Phone → OTP → RolePicker → KYC → Pending, matching customer.pdf §2 / Workers.pdf §1.2.
+    // OTP verification is still mocked client-side (any 6 digits succeeds) until
+    // SMS_PROVIDER_API_KEY is wired up (see README env vars) — ARCHITECTURE.md §6.
+    <Stack.Navigator initialRouteName="PhoneEntry" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="PhoneEntry" component={PhoneEntryScreen} />
       <Stack.Screen name="Otp" component={OtpScreen} />
       <Stack.Screen name="RolePicker" component={RolePickerScreen} />
