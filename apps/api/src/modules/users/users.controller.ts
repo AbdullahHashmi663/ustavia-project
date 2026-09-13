@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from '../../common/auth/current-user.decorator';
 import { JwtAuthGuard, type AuthenticatedRequest } from '../../common/auth/jwt-auth.guard';
@@ -18,5 +18,11 @@ export class UsersController {
   @Patch('me')
   updateMe(@CurrentUser() user: AuthenticatedRequest['user'], @Body() dto: UpdateMeDto) {
     return this.users.updateMe(user.id, dto);
+  }
+
+  /** A job's counterpart profile (name-free — no `name` column exists yet; role/rating/tier only). Distinct path from `me` so route matching never depends on registration order. */
+  @Get(':id/public')
+  getPublicProfile(@Param('id') id: string) {
+    return this.users.findPublicProfile(id);
   }
 }

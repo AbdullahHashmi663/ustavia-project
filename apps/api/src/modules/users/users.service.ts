@@ -23,4 +23,15 @@ export class UsersService {
     if (dto.workshopLocation !== undefined) user.workshopLocation = dto.workshopLocation;
     return this.users.save(user);
   }
+
+  /**
+   * The safe subset of another user's profile — no `phone`/`email`/CNIC
+   * urls. ARCHITECTURE.md §7: "Phone numbers and emails are visible only
+   * to Ustavia's backend/CRM, never to the counterparty" — so a job's
+   * other party is looked up through this, never `findByIdOrThrow`.
+   */
+  async findPublicProfile(id: string): Promise<Pick<UserEntity, 'id' | 'role' | 'ratingAvg' | 'tier' | 'verificationStatus'>> {
+    const user = await this.findByIdOrThrow(id);
+    return { id: user.id, role: user.role, ratingAvg: user.ratingAvg, tier: user.tier, verificationStatus: user.verificationStatus };
+  }
 }
