@@ -75,12 +75,35 @@ without a separate geo service.
 **Hosting (as of 2026-09-13):** `apps/api` connects to a hosted Supabase
 Postgres instance via the Session Pooler (`DATABASE_URL` in
 `apps/api/.env`, git-ignored — see `.env.example` for the format and the
-IPv6-only-direct-host gotcha). No schema exists yet (`entities: []` in
-`app.module.ts`); connecting was the first step, not a migration. The
-`postgis` extension's availability on this instance hasn't been verified —
-enable it (Database → Extensions in the Supabase dashboard, or
-`CREATE EXTENSION IF NOT EXISTS postgis;`) before the first migration that
-uses a geography column.
+IPv6-only-direct-host gotcha). `postgis` availability hasn't been verified
+on this instance, so `users.workshopLocation`/`jobs.location` are plain
+`{latitude, longitude}` jsonb for now (not a geography column), and
+`JobsService.list`'s `near` distance filter is a plain-code haversine
+calculation rather than a pushed-down `ST_Distance` query — both fine at
+today's scale, both worth revisiting once postgis is confirmed enabled and
+a real "workers near me" radius query is needed.
+
+**Schema (as of 2026-09-13):** the first real migration (`src/migrations/`)
+is applied to the live database — `users`, `jobs`, `disputes`,
+`chat_messages`, `wallet_ledger` tables exist, generated from the TypeORM
+entities under each module's `entities/` directory and verified end-to-end
+against real HTTP requests (OTP auth → job creation → negotiate → chat
+with real redaction → confirm/PIN/start → dual-ack complete → pay, wallet
+balance settling to the exact expected commission/withholding split).
+`hrm_members`/`attendance_records`/`dispatch_assignments` (used by the
+admin app's own separate mock store, ARCHITECTURE.md §3's `HrmModule`/
+`FinanceModule`) don't have API-layer entities yet — apps/admin isn't
+wired to this API at all, it still reads its own local Zustand mock store,
+same as apps/mobile. Connecting either frontend to this real API is
+separate, not-yet-started work — see PLANNING.md's execution log.
+
+**Auth (as of 2026-09-13):** OTP request/verify + JWT issuance is real and
+working (`AuthModule`), but `SMS_PROVIDER_API_KEY` isn't wired to an actual
+SMS vendor yet — `OtpService` generates a real code and returns it directly
+in the API response (`devCode`) so the flow is genuinely testable, and
+that return value is exactly what needs to be removed the moment a real
+SMS provider call replaces it. The OTP store is in-memory (single-process
+only — move to Redis before running more than one API instance, per §2.4).
 
 ### 2.4 Redis + Socket.IO for realtime
 

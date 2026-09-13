@@ -9,7 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - `apps/api` now connects to a hosted Supabase Postgres instance (Session
-  Pooler) for local/dev. Connection-only — no schema/migrations exist yet.
+  Pooler) for local/dev.
+- Real backend implementation, verified end-to-end against the live
+  database: OTP auth + JWT issuance (`AuthModule`), user profiles
+  (`UsersModule`), the full job lifecycle state machine — create, list
+  (with distance-from-Mazdoor), negotiate, propose, confirm (PIN
+  generation), start (PIN check), dual-acknowledgement complete, pay
+  (wallet ledger settlement) — and disputes (`JobsModule`), chat with
+  real server-side phone/email redaction (`ChatModule`), and a wallet
+  read model (`PaymentsModule`). First schema migration applied to the
+  live database. Neither `apps/mobile` nor `apps/admin` calls this API
+  yet — both still use their own local mock stores; that integration is
+  separate, not-yet-started work.
 
 ### Planned
 - Dual-role toggle (one account acting as both Customer and Mazdoor) —
