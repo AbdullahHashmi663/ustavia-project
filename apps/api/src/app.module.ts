@@ -20,6 +20,9 @@ import { VerificationModule } from './modules/verification/verification.module';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
+        // Hosted Postgres (e.g. Supabase's direct-connection host) requires TLS; rejectUnauthorized
+        // is off because Supabase's cert chain isn't in Node's default trust store — see .env.example.
+        ssl: config.get<string>('DATABASE_SSL') === 'true' ? { rejectUnauthorized: false } : false,
         entities: [],
         synchronize: false,
         autoLoadEntities: true,
