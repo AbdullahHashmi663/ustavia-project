@@ -28,14 +28,15 @@ interface AnimatedSplashScreenProps {
 /**
  * The first thing anyone sees — replaces expo-splash-screen's static native
  * splash the instant JS takes over (App.tsx calls SplashScreen.hideAsync()
- * as soon as this mounts) with a slow-breathing brand-blue blob (recolored
- * from assets/blob-haikei.svg), soft sonar rings, and the logo/wordmark
- * settling into place — "elegant" meaning restrained, slow easing and a
- * handful of soft motions rather than anything bouncy or busy.
+ * as soon as this mounts) with a brand-blue blob (recolored from
+ * assets/blob-haikei.svg) that pops into view on mount and then breathes
+ * gently, soft sonar rings, and the logo/wordmark settling into place.
  */
 export function AnimatedSplashScreen({ onFinish, ready }: AnimatedSplashScreenProps) {
-  const blobScale = useRef(new Animated.Value(0.92)).current;
-  const blobRotate = useRef(new Animated.Value(0)).current;
+  // Starts small/invisible and pops out to full size on mount (spring
+  // overshoot), then hands off into the slow infinite breathing loop below.
+  const blobScale = useRef(new Animated.Value(0.4)).current;
+  const blobOpacity = useRef(new Animated.Value(0)).current;
   const ring1 = useRef(new Animated.Value(0)).current;
   const ring2 = useRef(new Animated.Value(0)).current;
   const ring3 = useRef(new Animated.Value(0)).current;
@@ -47,17 +48,20 @@ export function AnimatedSplashScreen({ onFinish, ready }: AnimatedSplashScreenPr
   const containerOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Ambient background — a slow breathing scale and a near-imperceptibly
-    // slow full rotation, both infinite, both running throughout.
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(blobScale, { toValue: 1.06, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(blobScale, { toValue: 0.92, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ]),
-    ).start();
-    Animated.loop(
-      Animated.timing(blobRotate, { toValue: 1, duration: 40000, easing: Easing.linear, useNativeDriver: true }),
-    ).start();
+    // Blob pops out on mount — a bouncy spring from small/invisible up past
+    // full size and settling back, then hands off into a slow infinite
+    // breathing loop so it doesn't go static once the pop is done.
+    Animated.parallel([
+      Animated.spring(blobScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true }),
+      Animated.timing(blobOpacity, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(blobScale, { toValue: 1.06, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(blobScale, { toValue: 0.92, duration: 4200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ]),
+      ).start();
+    });
 
     // Soft sonar rings expanding out from behind the logo, staggered.
     const pulse = (value: Animated.Value, delay: number) =>
@@ -93,7 +97,7 @@ export function AnimatedSplashScreen({ onFinish, ready }: AnimatedSplashScreenPr
         Animated.timing(wordmarkTranslateY, { toValue: 0, duration: 550, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       ]),
     ]).start();
-  }, [blobScale, blobRotate, ring1, ring2, ring3, logoOpacity, logoScale, logoFloat, wordmarkOpacity, wordmarkTranslateY]);
+  }, [blobScale, blobOpacity, ring1, ring2, ring3, logoOpacity, logoScale, logoFloat, wordmarkOpacity, wordmarkTranslateY]);
 
   // Exit only once BOTH the minimum display time has passed AND the real
   // app says it's ready — whichever finishes last. Never cuts the intro
@@ -127,7 +131,6 @@ export function AnimatedSplashScreen({ onFinish, ready }: AnimatedSplashScreenPr
     // caller as an inline setState callback).
   }, [ready]);
 
-  const rotate = blobRotate.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   const ringStyle = (value: Animated.Value) => ({
     transform: [{ scale: value.interpolate({ inputRange: [0, 1], outputRange: [0.5, 2.4] }) }],
     opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.32, 0] }),
@@ -136,7 +139,11 @@ export function AnimatedSplashScreen({ onFinish, ready }: AnimatedSplashScreenPr
   return (
     <Animated.View style={[StyleSheet.absoluteFill, styles.container, { opacity: containerOpacity }]}>
       <Animated.View
-        style={[StyleSheet.absoluteFill, styles.blobWrap, { transform: [{ scale: blobScale }, { rotate }] }]}
+        style={[
+          StyleSheet.absoluteFill,
+          styles.blobWrap,
+          { opacity: blobOpacity, transform: [{ scale: blobScale }] },
+        ]}
       >
         <Svg
           width={SCREEN_W * 1.8}
@@ -223,14 +230,15 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '700',
     letterSpacing: 4,
-    color: colors.textPrimary,
+    color: colors.white,
     textAlign: 'center',
   },
   tagline: {
     marginTop: 6,
     fontSize: 13,
     letterSpacing: 1,
-    color: colors.textSecondary,
+    color: colors.white,
+    opacity: 0.85,
     textAlign: 'center',
   },
 });
