@@ -385,20 +385,20 @@ const styles = StyleSheet.create({
   },
   centerContainer: {
     position: 'absolute',
-    top: '36%',
+    top: '34%',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
   logoWrapper: {
-    width: 110,
-    height: 110,
+    width: 138,
+    height: 138,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoImage: {
-    width: 100,
-    height: 100,
+    width: 128,
+    height: 128,
     // Add clean drop shadow for elevation
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 6 },
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   wordmarkWrapper: {
-    marginTop: 14,
+    marginTop: 16,
     alignItems: 'center',
   },
   wordmark: {
