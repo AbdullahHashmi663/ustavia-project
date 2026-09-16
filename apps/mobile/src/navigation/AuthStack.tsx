@@ -7,6 +7,11 @@ import { RolePickerScreen } from '../screens/shared/auth/RolePickerScreen';
 import { SetPasswordScreen } from '../screens/shared/auth/SetPasswordScreen';
 import { KycUploadScreen } from '../screens/shared/verification/KycUploadScreen';
 import { PendingVerificationScreen } from '../screens/shared/verification/PendingVerificationScreen';
+import { WorkerBasicProfileScreen } from '../screens/mazdoor/onboarding/WorkerBasicProfileScreen';
+import { WorkerCnicScreen } from '../screens/mazdoor/onboarding/WorkerCnicScreen';
+import { WorkerSkillsScreen } from '../screens/mazdoor/onboarding/WorkerSkillsScreen';
+import { WorkerRatesAvailabilityScreen } from '../screens/mazdoor/onboarding/WorkerRatesAvailabilityScreen';
+import { WorkerWelcomeScreen } from '../screens/mazdoor/onboarding/WorkerWelcomeScreen';
 import { useTheme } from '../theme/ThemeProvider';
 import type { AuthStackParamList } from './types';
 
@@ -30,6 +35,11 @@ export function AuthStack() {
       <Stack.Screen name="SetPassword" component={SetPasswordScreen} />
       <Stack.Screen name="KycUpload" component={KycUploadScreen} />
       <Stack.Screen name="PendingVerification" component={PendingVerificationScreen} />
+      <Stack.Screen name="WorkerBasicProfile" component={WorkerBasicProfileScreen} />
+      <Stack.Screen name="WorkerCnic" component={WorkerCnicScreen} />
+      <Stack.Screen name="WorkerSkills" component={WorkerSkillsScreen} />
+      <Stack.Screen name="WorkerRates" component={WorkerRatesAvailabilityScreen} />
+      <Stack.Screen name="WorkerWelcome" component={WorkerWelcomeScreen} />
     </Stack.Navigator>
   );
 }

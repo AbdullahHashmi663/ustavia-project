@@ -11,6 +11,11 @@ export type AuthStackParamList = {
   SetPassword: { afterVerified: boolean };
   KycUpload: undefined;
   PendingVerification: undefined;
+  WorkerBasicProfile: { phone?: string } | undefined;
+  WorkerCnic: Record<string, any>;
+  WorkerSkills: Record<string, any>;
+  WorkerRates: Record<string, any>;
+  WorkerWelcome: Record<string, any>;
 };
 
 export type MazdoorTabsParamList = {
