@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Phone } from 'lucide-react-native';
+import { Lock, Phone, ShieldCheck } from 'lucide-react-native';
 
 import { normalizePakistaniPhone, requestOtp } from '../../../api/auth';
 import { ApiError } from '../../../api/client';
@@ -14,7 +14,7 @@ import type { AuthStackParamList } from '../../../navigation/types';
 type Props = NativeStackScreenProps<AuthStackParamList, 'PhoneEntry'>;
 
 export function PhoneEntryScreen({ navigation }: Props) {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, radii, spacing, typography } = useTheme();
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,39 +34,155 @@ export function PhoneEntryScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
-      <Logo size={56} />
-      <View style={{ height: spacing.xl }} />
-      <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: 24 }]}>
-        Enter your phone number
-      </Text>
-      <Text style={[styles.subheading, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg }]}>
-        We'll text you a one-time code to verify it's you.
-      </Text>
-      <TextField
-        placeholder="+92 3XX XXXXXXX"
-        keyboardType="phone-pad"
-        value={phone}
-        onChangeText={setPhone}
-        icon={Phone}
-      />
-      {error && (
-        <Text style={[styles.error, { color: colors.danger, marginTop: spacing.sm }]}>{error}</Text>
-      )}
-      <View style={{ marginTop: spacing.lg }}>
-        <Button label="Send OTP" loading={loading} disabled={phone.trim().length < 10} onPress={handleSend} />
-      </View>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.canvas ?? colors.white }}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <View style={[styles.innerContainer, { padding: spacing.xl }]}>
+        <View style={styles.logoContainer}>
+          <Logo size={52} />
+        </View>
 
-      <Pressable onPress={() => navigation.navigate('Login')} style={{ marginTop: spacing.lg, alignSelf: 'center' }}>
-        <Text style={{ color: colors.brandBlue, fontSize: typography.size.sm }}>Already have a password? Log in</Text>
-      </Pressable>
-    </View>
+        <Text
+          style={[
+            styles.heading,
+            {
+              color: colors.textPrimary,
+              fontFamily: typography.headingWeights.bold,
+              fontSize: 26,
+              marginTop: spacing.lg,
+            },
+          ]}
+        >
+          Welcome to Ustavia
+        </Text>
+
+        <Text
+          style={[
+            styles.subheading,
+            {
+              color: colors.textSecondary,
+              marginTop: spacing.xs,
+              marginBottom: spacing.xl,
+            },
+          ]}
+        >
+          Enter your mobile number to get started with instant local hiring and jobs.
+        </Text>
+
+        <View style={styles.inputStack}>
+          <TextField
+            label="Mobile Phone Number"
+            placeholder="03XX XXXXXXX"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            icon={Phone}
+            helperText="Enter 11-digit Pakistani mobile number"
+          />
+        </View>
+
+        {error && (
+          <View style={[styles.errorBox, { backgroundColor: colors.dangerLight, borderRadius: radii.md }]}>
+            <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
+          </View>
+        )}
+
+        <View style={{ marginTop: spacing.md }}>
+          <Button
+            label="Send Verification Code"
+            variant="primary"
+            loading={loading}
+            disabled={phone.trim().length < 10}
+            onPress={handleSend}
+          />
+        </View>
+
+        {/* Privacy Note */}
+        <View
+          style={[
+            styles.privacyBadge,
+            {
+              backgroundColor: colors.surfaceSubtle,
+              borderRadius: radii.md,
+              padding: spacing.md,
+              marginTop: spacing.xl,
+            },
+          ]}
+        >
+          <ShieldCheck size={16} color={colors.brandBlue} strokeWidth={2} />
+          <Text style={[styles.privacyText, { color: colors.textSecondary, fontSize: typography.size.xs }]}>
+            Your number is securely verified and will never be shared without consent.
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={() => navigation.navigate('Login')}
+          style={styles.loginLink}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Lock size={14} color={colors.brandBlue} />
+            <Text
+              style={{
+                color: colors.brandBlue,
+                fontSize: typography.size.sm,
+                fontFamily: typography.headingWeights.semibold,
+              }}
+            >
+              Have a password? Log in directly
+            </Text>
+          </View>
+        </Pressable>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  heading: {},
-  subheading: { fontSize: 14 },
-  error: { fontSize: 13 },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+  },
+  innerContainer: {
+    width: '100%',
+    maxWidth: 480,
+  },
+  logoContainer: {
+    alignItems: 'center',
+  },
+  heading: {
+    textAlign: 'center',
+  },
+  subheading: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  inputStack: {
+    marginBottom: 8,
+  },
+  errorBox: {
+    padding: 12,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  error: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  privacyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  privacyText: {
+    flex: 1,
+    lineHeight: 16,
+  },
+  loginLink: {
+    marginTop: 20,
+    alignSelf: 'center',
+    padding: 8,
+  },
 });

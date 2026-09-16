@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Lock } from 'lucide-react-native';
+import { ShieldAlert } from 'lucide-react-native';
 
 import { useTheme } from '../theme/ThemeProvider';
 
@@ -10,24 +10,61 @@ interface ChatBubbleProps {
 }
 
 export function ChatBubble({ body, isOwnMessage, redacted }: ChatBubbleProps) {
-  const { colors, radii, spacing } = useTheme();
+  const { colors, radii, spacing, shadows, typography } = useTheme();
 
   return (
     <View
       style={[
         styles.bubble,
-        { borderRadius: radii.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+        {
+          borderRadius: radii.lg,
+          borderBottomRightRadius: isOwnMessage ? 4 : radii.lg,
+          borderBottomLeftRadius: !isOwnMessage ? 4 : radii.lg,
+          paddingHorizontal: spacing.md + 2,
+          paddingVertical: spacing.sm + 2,
+        },
         isOwnMessage
-          ? { backgroundColor: colors.brandBlue, alignSelf: 'flex-end' }
-          : { backgroundColor: colors.surface, alignSelf: 'flex-start' },
+          ? {
+              backgroundColor: colors.brandBlue,
+              alignSelf: 'flex-end',
+            }
+          : {
+              backgroundColor: colors.white,
+              borderWidth: 1,
+              borderColor: colors.borderSubtle,
+              alignSelf: 'flex-start',
+              ...shadows.sm,
+            },
       ]}
     >
-      <Text style={{ color: isOwnMessage ? colors.white : colors.textPrimary }}>{body}</Text>
+      <Text
+        style={{
+          color: isOwnMessage ? colors.white : colors.textPrimary,
+          fontSize: 15,
+          lineHeight: 21,
+        }}
+      >
+        {body}
+      </Text>
+
       {redacted && (
-        <View style={styles.redactedRow}>
-          <Lock size={10} color={isOwnMessage ? colors.brandBlueLight : colors.textMuted} />
-          <Text style={[styles.redactedNote, { color: isOwnMessage ? colors.brandBlueLight : colors.textMuted }]}>
-            Contact info hidden for your safety
+        <View
+          style={[
+            styles.redactedBox,
+            {
+              backgroundColor: isOwnMessage ? 'rgba(0, 0, 0, 0.15)' : colors.warningLight,
+              borderRadius: radii.sm,
+            },
+          ]}
+        >
+          <ShieldAlert size={12} color={isOwnMessage ? colors.white : colors.warning} />
+          <Text
+            style={[
+              styles.redactedNote,
+              { color: isOwnMessage ? colors.white : '#92400E' },
+            ]}
+          >
+            Direct contact info filtered for your escrow security
           </Text>
         </View>
       )}
@@ -37,16 +74,20 @@ export function ChatBubble({ body, isOwnMessage, redacted }: ChatBubbleProps) {
 
 const styles = StyleSheet.create({
   bubble: {
-    maxWidth: '80%',
+    maxWidth: '82%',
     marginVertical: 4,
   },
-  redactedRow: {
+  redactedBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 6,
   },
   redactedNote: {
-    fontSize: 10,
+    fontSize: 11,
+    flex: 1,
+    lineHeight: 14,
   },
 });

@@ -9,13 +9,12 @@ interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   error?: string;
   helperText?: string;
   icon?: LucideIcon;
-  /** Rendered inline-right inside the field — e.g. an eye-toggle or a unit suffix. Both UX specs use this pattern constantly (password visibility, currency prefix, card-brand icon). */
+  /** Rendered inline-right inside the field — e.g. an eye-toggle or a unit suffix. */
   rightAccessory?: React.ReactNode;
 }
 
-/** Label-above-input pattern used throughout both UX specs (2.3 Set Password, 2.4 Basic Profile, 8.4 Add Bank Account, ...). */
 export function TextField({ label, error, helperText, icon: Icon, rightAccessory, ...inputProps }: TextFieldProps) {
-  const { colors, radii, spacing, typography } = useTheme();
+  const { colors, radii, spacing, typography, shadows } = useTheme();
   const [focused, setFocused] = useState(false);
 
   const borderColor = error ? colors.danger : focused ? colors.brandBlue : colors.border;
@@ -23,20 +22,38 @@ export function TextField({ label, error, helperText, icon: Icon, rightAccessory
   return (
     <View style={styles.container}>
       {label && (
-        <Text style={[styles.label, { color: colors.textSecondary, fontSize: typography.size.sm }]}>{label}</Text>
+        <Text
+          style={[
+            styles.label,
+            {
+              color: colors.textPrimary,
+              fontSize: typography.size.sm,
+              fontFamily: typography.headingWeights.semibold,
+            },
+          ]}
+        >
+          {label}
+        </Text>
       )}
+
       <View
         style={[
           styles.field,
+          focused && shadows.sm,
           {
             borderColor,
-            borderRadius: radii.sm,
-            paddingHorizontal: spacing.md,
+            borderRadius: radii.md,
+            paddingHorizontal: spacing.md + 2,
             backgroundColor: colors.white,
           },
         ]}
       >
-        {Icon && <Icon size={18} color={colors.textMuted} />}
+        {Icon && (
+          <View style={styles.iconContainer}>
+            <Icon size={19} color={error ? colors.danger : focused ? colors.brandBlue : colors.textMuted} strokeWidth={2} />
+          </View>
+        )}
+
         <TextInput
           {...inputProps}
           onFocus={(e) => {
@@ -48,12 +65,29 @@ export function TextField({ label, error, helperText, icon: Icon, rightAccessory
             inputProps.onBlur?.(e);
           }}
           placeholderTextColor={colors.textMuted}
-          style={[styles.input, { color: colors.textPrimary, fontSize: typography.size.base }]}
+          style={[
+            styles.input,
+            {
+              color: colors.textPrimary,
+              fontSize: typography.size.base,
+            },
+          ]}
         />
+
         {rightAccessory}
       </View>
+
       {(error || helperText) && (
-        <Text style={[styles.helper, { color: error ? colors.danger : colors.textMuted, fontSize: typography.size.xs }]}>
+        <Text
+          style={[
+            styles.helper,
+            {
+              color: error ? colors.danger : colors.textMuted,
+              fontSize: typography.size.xs,
+              fontFamily: error ? typography.headingWeights.semibold : undefined,
+            },
+          ]}
+        >
           {error ?? helperText}
         </Text>
       )}
@@ -62,15 +96,29 @@ export function TextField({ label, error, helperText, icon: Icon, rightAccessory
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 6 },
-  label: { fontWeight: '500' },
+  container: {
+    gap: 7,
+  },
+  label: {
+    letterSpacing: 0.15,
+  },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    minHeight: 48,
+    gap: 10,
+    borderWidth: 1.5,
+    minHeight: 52,
   },
-  input: { flex: 1, minWidth: 0, paddingVertical: 12 }, // minWidth:0 — see OtpScreen.tsx's cell style comment
-  helper: {},
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  input: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 13,
+  },
+  helper: {
+    marginLeft: 2,
+  },
 });

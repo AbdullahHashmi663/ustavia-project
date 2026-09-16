@@ -1,12 +1,15 @@
 import { createContext, useContext, type PropsWithChildren } from 'react';
-import { theme as tokens, type Theme } from '@ustavia/shared';
+import { appTheme, type AppTheme } from './tokens';
 
-const ThemeContext = createContext<Theme>(tokens);
+const ThemeContext = createContext<AppTheme>(appTheme);
 
 export function ThemeProvider({ children }: PropsWithChildren) {
-  return <ThemeContext.Provider value={tokens}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={appTheme}>{children}</ThemeContext.Provider>;
 }
 
-export function useTheme(): Theme {
+export function useTheme(): AppTheme {
   return useContext(ThemeContext);
 }
+
+export type Theme = AppTheme;
+export type { AppTheme };

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { ArrowLeft, Clock, Info } from 'lucide-react-native';
 
 import { requestOtp } from '../../../api/auth';
 import { ApiError } from '../../../api/client';
+import { Button } from '../../../components/Button';
 import { Logo } from '../../../components/Logo';
 import { useTheme } from '../../../theme/ThemeProvider';
 import type { AuthStackParamList } from '../../../navigation/types';
@@ -13,16 +15,8 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Otp'>;
 const CELL_COUNT = 6;
 const RESEND_SECONDS = 30;
 
-/**
- * 6 boxed cells, auto-advance/auto-submit on the last digit, resend
- * countdown — customer.pdf §2.2 / Workers.pdf §1.2.2. The code itself isn't
- * verified here: the real `role` it needs to send alongside the code to
- * `POST /auth/otp/verify` isn't known yet at this point in the flow (that's
- * the next screen), so this just collects 6 digits and hands {phone, code}
- * forward — RolePickerScreen makes the actual verify call.
- */
 export function OtpScreen({ route, navigation }: Props) {
-  const { colors, radii, spacing, typography } = useTheme();
+  const { colors, radii, spacing, typography, shadows } = useTheme();
   const [digits, setDigits] = useState<string[]>(Array(CELL_COUNT).fill(''));
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
   const [resending, setResending] = useState(false);
@@ -72,80 +66,213 @@ export function OtpScreen({ route, navigation }: Props) {
     }
   };
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
-      <Logo size={56} />
-      <View style={{ height: spacing.xl }} />
-      <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: 24 }]}>
-        Verify your number
-      </Text>
-      <Text style={[styles.subheading, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.xl }]}>
-        Enter the 6-digit code sent to {route.params.phone}
-      </Text>
-      {devCode && (
-        <Text style={[styles.devHint, { color: colors.textMuted, marginBottom: spacing.md }]}>
-          Dev preview — no SMS provider connected yet, your code is {devCode}
-        </Text>
-      )}
+  const isComplete = digits.every(Boolean);
 
-      <View style={styles.cellRow}>
-        {digits.map((digit, index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => {
-              inputs.current[index] = ref;
-            }}
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.canvas ?? colors.white }}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <View style={[styles.innerContainer, { padding: spacing.xl }]}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={[styles.backButton, { backgroundColor: colors.surfaceSubtle, borderRadius: radii.full }]}
+          accessibilityLabel="Go back"
+        >
+          <ArrowLeft size={18} color={colors.textPrimary} />
+        </Pressable>
+
+        <View style={styles.logoContainer}>
+          <Logo size={48} />
+        </View>
+
+        <Text
+          style={[
+            styles.heading,
+            {
+              color: colors.textPrimary,
+              fontFamily: typography.headingWeights.bold,
+              fontSize: 24,
+              marginTop: spacing.lg,
+            },
+          ]}
+        >
+          Verify your number
+        </Text>
+
+        <Text
+          style={[
+            styles.subheading,
+            {
+              color: colors.textSecondary,
+              marginTop: spacing.xs,
+              marginBottom: spacing.lg,
+            },
+          ]}
+        >
+          Enter the 6-digit code sent to <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>{route.params.phone}</Text>
+        </Text>
+
+        {devCode && (
+          <View
             style={[
-              styles.cell,
+              styles.devBadge,
               {
-                borderColor: digit ? colors.brandBlue : colors.border,
-                borderRadius: radii.sm,
-                color: colors.textPrimary,
+                backgroundColor: colors.warningLight,
+                borderColor: colors.warning,
+                borderRadius: radii.md,
+                padding: spacing.md,
+                marginBottom: spacing.lg,
               },
             ]}
-            keyboardType="number-pad"
-            maxLength={1}
-            value={digit}
-            onChangeText={(value) => handleChange(index, value)}
-            onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key)}
-            autoFocus={index === 0}
-          />
-        ))}
-      </View>
-
-      {resendError && (
-        <Text style={[styles.error, { color: colors.danger, marginTop: spacing.sm }]}>{resendError}</Text>
-      )}
-
-      <View style={styles.resendRow}>
-        {secondsLeft > 0 ? (
-          <Text style={{ color: colors.textMuted }}>Resend code in 0:{secondsLeft.toString().padStart(2, '0')}</Text>
-        ) : (
-          <Pressable onPress={handleResend} disabled={resending}>
-            <Text style={{ color: colors.brandBlue, fontFamily: typography.headingWeights.semibold, opacity: resending ? 0.6 : 1 }}>
-              {resending ? 'Sending…' : 'Resend code'}
+          >
+            <Info size={16} color={colors.warning} />
+            <Text style={[styles.devHint, { color: '#92400E', fontSize: typography.size.xs }]}>
+              Dev Preview: Your test code is <Text style={{ fontWeight: '700' }}>{devCode}</Text>
             </Text>
-          </Pressable>
+          </View>
         )}
+
+        <View style={styles.cellRow}>
+          {digits.map((digit, index) => {
+            const isFilled = Boolean(digit);
+            return (
+              <TextInput
+                key={index}
+                ref={(ref) => {
+                  inputs.current[index] = ref;
+                }}
+                style={[
+                  styles.cell,
+                  isFilled && shadows.sm,
+                  {
+                    borderColor: isFilled ? colors.brandOrange : colors.border,
+                    borderRadius: radii.md,
+                    backgroundColor: colors.white,
+                    color: colors.textPrimary,
+                    fontFamily: typography.headingWeights.bold,
+                  },
+                ]}
+                keyboardType="number-pad"
+                maxLength={1}
+                value={digit}
+                onChangeText={(value) => handleChange(index, value)}
+                onKeyPress={({ nativeEvent }) => handleKeyPress(index, nativeEvent.key)}
+                autoFocus={index === 0}
+              />
+            );
+          })}
+        </View>
+
+        {resendError && (
+          <Text style={[styles.error, { color: colors.danger, marginTop: spacing.md }]}>{resendError}</Text>
+        )}
+
+        <View style={styles.resendRow}>
+          {secondsLeft > 0 ? (
+            <View style={[styles.timerPill, { backgroundColor: colors.surfaceSubtle, borderRadius: radii.full }]}>
+              <Clock size={13} color={colors.textMuted} />
+              <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                Resend code in <Text style={{ fontWeight: '600' }}>0:{secondsLeft.toString().padStart(2, '0')}</Text>
+              </Text>
+            </View>
+          ) : (
+            <Pressable onPress={handleResend} disabled={resending} style={{ padding: 4 }}>
+              <Text
+                style={{
+                  color: colors.brandBlue,
+                  fontFamily: typography.headingWeights.semibold,
+                  fontSize: 14,
+                  opacity: resending ? 0.6 : 1,
+                }}
+              >
+                {resending ? 'Sending new code…' : "Didn't get the code? Resend"}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={{ marginTop: spacing.xl }}>
+          <Button
+            label="Verify & Continue"
+            variant="primary"
+            disabled={!isComplete}
+            onPress={() => navigation.navigate('RolePicker', { phone: route.params.phone, code: digits.join('') })}
+          />
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  heading: {},
-  subheading: { fontSize: 14 },
-  devHint: { fontSize: 12, fontStyle: 'italic' },
-  error: { fontSize: 13 },
-  cellRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+  },
+  innerContainer: {
+    width: '100%',
+    maxWidth: 480,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 24,
+    left: 20,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  logoContainer: {
+    alignItems: 'center',
+  },
+  heading: {
+    textAlign: 'center',
+  },
+  subheading: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  devBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+  },
+  devHint: {
+    flex: 1,
+  },
+  error: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  cellRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginVertical: 12,
+  },
   cell: {
     flex: 1,
-    minWidth: 0, // flex children default to min-width:auto on web; without this an <input>'s intrinsic width stops it shrinking to fit 6-in-a-row
-    height: 52,
+    minWidth: 0,
+    height: 56,
     borderWidth: 1.5,
     textAlign: 'center',
-    fontSize: 20,
+    fontSize: 22,
   },
-  resendRow: { marginTop: 20, alignItems: 'center' },
+  resendRow: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  timerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
 });

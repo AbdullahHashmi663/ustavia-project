@@ -13,12 +13,11 @@ const STATUS_LABEL: Record<JobStatus, string> = {
   disputed: 'Disputed',
 };
 
-/** Color token pair (background/foreground) per state — matches both UX specs' color-coded status pill pattern (e.g. customer.pdf §12.1: "green Completed, blue Active, red Cancelled, orange Disputed"). */
-const STATUS_TONE: Record<JobStatus, 'neutral' | 'info' | 'success' | 'danger'> = {
+const STATUS_TONE: Record<JobStatus, 'neutral' | 'negotiation' | 'active' | 'success' | 'danger'> = {
   posted: 'neutral',
-  negotiating: 'info',
-  confirmed: 'info',
-  in_progress: 'info',
+  negotiating: 'negotiation',
+  confirmed: 'active',
+  in_progress: 'active',
   completed: 'success',
   paid: 'success',
   disputed: 'danger',
@@ -31,21 +30,36 @@ interface StatusBadgeProps {
 export function StatusBadge({ status }: StatusBadgeProps) {
   const { colors, radii, spacing, typography } = useTheme();
   const tone = STATUS_TONE[status];
+
   const tonePalette = {
-    neutral: { bg: colors.surface, fg: colors.textSecondary },
-    info: { bg: colors.brandBlueLight, fg: colors.brandBlueDark },
-    success: { bg: colors.successLight, fg: colors.success },
-    danger: { bg: colors.dangerLight, fg: colors.danger },
+    neutral: { bg: colors.surfaceSubtle, fg: colors.textSecondary, dot: colors.textMuted },
+    negotiation: { bg: colors.warningLight, fg: '#B45309', dot: colors.brandOrangeWarm ?? '#FEA82F' },
+    active: { bg: colors.brandBlueLight, fg: colors.brandBlue, dot: colors.brandBlue },
+    success: { bg: colors.successLight, fg: '#047857', dot: colors.success },
+    danger: { bg: colors.dangerLight, fg: colors.danger, dot: colors.danger },
   }[tone];
 
   return (
     <View
       style={[
         styles.badge,
-        { backgroundColor: tonePalette.bg, borderRadius: radii.full, paddingHorizontal: spacing.sm, paddingVertical: spacing.xxs },
+        {
+          backgroundColor: tonePalette.bg,
+          borderRadius: radii.full,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.xs,
+        },
       ]}
     >
-      <Text style={{ color: tonePalette.fg, fontSize: typography.size.xs, fontFamily: typography.headingWeights.semibold }}>
+      <View style={[styles.indicatorDot, { backgroundColor: tonePalette.dot }]} />
+      <Text
+        style={{
+          color: tonePalette.fg,
+          fontSize: typography.size.xs + 0.5,
+          fontFamily: typography.headingWeights.semibold,
+          letterSpacing: 0.2,
+        }}
+      >
         {STATUS_LABEL[status]}
       </Text>
     </View>
@@ -53,5 +67,15 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 }
 
 const styles = StyleSheet.create({
-  badge: { alignSelf: 'flex-start' },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+  },
+  indicatorDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
 });

@@ -11,6 +11,7 @@ import { PaymentMethodScreen } from '../screens/shared/payment/PaymentMethodScre
 import { PaymentSuccessScreen } from '../screens/shared/payment/PaymentSuccessScreen';
 import { SosScreen } from '../screens/shared/SosScreen';
 import { useAuthStore } from '../store/auth';
+import { useTheme } from '../theme/ThemeProvider';
 import { CustomerTabs } from './CustomerTabs';
 import { MazdoorTabs } from './MazdoorTabs';
 import type { AppStackParamList } from './types';
@@ -24,21 +25,35 @@ function Tabs() {
 }
 
 export function AppStack() {
+  const { colors, typography } = useTheme();
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        headerTintColor: colors.textPrimary,
+        headerStyle: { backgroundColor: colors.white },
+        headerTitleStyle: {
+          fontFamily: typography.headingWeights.bold,
+          fontSize: 17,
+        },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: colors.canvas },
+      }}
+    >
       <Stack.Screen name="Tabs" component={Tabs} />
-      <Stack.Screen name="JobDetail" component={JobDetailScreen} options={{ headerShown: true, title: 'Job' }} />
+      <Stack.Screen name="JobDetail" component={JobDetailScreen} options={{ headerShown: true, title: 'Job Details' }} />
       <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, title: 'Chat' }} />
       <Stack.Screen name="Sos" component={SosScreen} options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen
         name="PaymentMethod"
         component={PaymentMethodScreen}
-        options={{ headerShown: true, title: 'Payment' }}
+        options={{ headerShown: true, title: 'Payment Method' }}
       />
       <Stack.Screen
         name="EscrowConfirm"
         component={EscrowConfirmScreen}
-        options={{ headerShown: true, title: 'Confirm Payment' }}
+        options={{ headerShown: true, title: 'Confirm Escrow' }}
       />
       <Stack.Screen
         name="PaymentSuccess"
@@ -48,7 +63,7 @@ export function AppStack() {
       <Stack.Screen
         name="DisputeDetail"
         component={DisputeDetailScreen}
-        options={{ headerShown: true, title: 'Dispute' }}
+        options={{ headerShown: true, title: 'Dispute Case' }}
       />
       <Stack.Screen
         name="Withdrawal"
@@ -63,7 +78,7 @@ export function AppStack() {
       <Stack.Screen
         name="ChangePassword"
         component={ChangePasswordScreen}
-        options={{ headerShown: true, title: 'Password' }}
+        options={{ headerShown: true, title: 'Change Password' }}
       />
     </Stack.Navigator>
   );

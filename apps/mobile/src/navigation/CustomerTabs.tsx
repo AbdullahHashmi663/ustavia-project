@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { CalendarClock, History, MessageCircle, PlusSquare, Settings } from 'lucide-react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { PostJobScreen } from '../screens/customer/PostJobScreen';
 import { ScheduledScreen } from '../screens/customer/ScheduledScreen';
@@ -11,9 +12,19 @@ import type { CustomerTabsParamList } from './types';
 
 const Tab = createBottomTabNavigator<CustomerTabsParamList>();
 
-/** Customer dashboard accent is brand blue — see design system usage rules. */
-export function CustomerTabs() {
+function TabIcon({ Icon, focused, color, size }: { Icon: typeof PlusSquare; focused: boolean; color: string; size: number }) {
   const { colors } = useTheme();
+  return (
+    <View style={styles.iconWrapper}>
+      <Icon color={color} size={size} strokeWidth={focused ? 2.3 : 1.8} />
+      {focused && <View style={[styles.activeDot, { backgroundColor: colors.brandBlue }]} />}
+    </View>
+  );
+}
+
+/** Customer navigation with deep trust marine blue (#006199) and active glow dots */
+export function CustomerTabs() {
+  const { colors, typography, shadows } = useTheme();
 
   return (
     <Tab.Navigator
@@ -21,33 +32,82 @@ export function CustomerTabs() {
         headerShown: false,
         tabBarActiveTintColor: colors.brandBlue,
         tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            backgroundColor: colors.white,
+            borderTopColor: colors.borderSubtle,
+          },
+          shadows.md,
+        ],
+        tabBarLabelStyle: {
+          fontFamily: typography.headingWeights.semibold,
+          fontSize: 11,
+          marginTop: -2,
+        },
       }}
     >
       <Tab.Screen
         name="PostJob"
         component={PostJobScreen}
-        options={{ title: 'Post Job', tabBarIcon: ({ color, size }) => <PlusSquare color={color} size={size} /> }}
+        options={{
+          title: 'Post Job',
+          tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={PlusSquare} color={color} size={size} focused={focused} />,
+        }}
       />
       <Tab.Screen
         name="Scheduled"
         component={ScheduledScreen}
-        options={{ tabBarIcon: ({ color, size }) => <CalendarClock color={color} size={size} /> }}
+        options={{
+          title: 'Scheduled',
+          tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={CalendarClock} color={color} size={size} focused={focused} />,
+        }}
       />
       <Tab.Screen
         name="Messages"
         component={MessagesScreen}
-        options={{ tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} /> }}
+        options={{
+          title: 'Messages',
+          tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={MessageCircle} color={color} size={size} focused={focused} />,
+        }}
       />
       <Tab.Screen
         name="History"
         component={HistoryScreen}
-        options={{ tabBarIcon: ({ color, size }) => <History color={color} size={size} /> }}
+        options={{
+          title: 'History',
+          tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={History} color={color} size={size} focused={focused} />,
+        }}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ tabBarIcon: ({ color, size }) => <Settings color={color} size={size} /> }}
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={Settings} color={color} size={size} focused={focused} />,
+        }}
       />
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    height: 62,
+    paddingBottom: 8,
+    paddingTop: 6,
+    borderTopWidth: 1,
+  },
+  iconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 30,
+  },
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    position: 'absolute',
+    bottom: -4,
+  },
+});

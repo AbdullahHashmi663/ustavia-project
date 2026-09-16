@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Lock, Phone } from 'lucide-react-native';
+import { Eye, EyeOff, Lock, Phone } from 'lucide-react-native';
 
 import { loginWithPassword, normalizePakistaniPhone } from '../../../api/auth';
 import { ApiError } from '../../../api/client';
@@ -16,13 +16,13 @@ import { afterAuthSession } from './afterAuthSession';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-/** The returning-user fast path — phone + the password set via SetPasswordScreen, no OTP round trip. */
 export function LoginScreen({ navigation }: Props) {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, radii, spacing, typography } = useTheme();
   const setAccessToken = useSessionStore((state) => state.setAccessToken);
   const setUser = useAuthStore((state) => state.setUser);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,60 +33,143 @@ export function LoginScreen({ navigation }: Props) {
       const session = await loginWithPassword(normalizePakistaniPhone(phone), password);
       afterAuthSession(navigation, setAccessToken, setUser, session);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not reach Ustavia. Check your connection and try again.');
+      setError(err instanceof ApiError ? err.message : 'Could not reach Ustavia. Check your credentials and try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
-      <Logo size={56} />
-      <View style={{ height: spacing.xl }} />
-      <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: 24 }]}>
-        Log in
-      </Text>
-      <Text style={[styles.subheading, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg }]}>
-        Enter your phone number and password.
-      </Text>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.canvas ?? colors.white }}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <View style={[styles.innerContainer, { padding: spacing.xl }]}>
+        <View style={styles.logoContainer}>
+          <Logo size={52} />
+        </View>
 
-      <TextField
-        placeholder="+92 3XX XXXXXXX"
-        keyboardType="phone-pad"
-        value={phone}
-        onChangeText={setPhone}
-        icon={Phone}
-      />
-      <View style={{ height: spacing.md }} />
-      <TextField
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        icon={Lock}
-      />
+        <Text
+          style={[
+            styles.heading,
+            {
+              color: colors.textPrimary,
+              fontFamily: typography.headingWeights.bold,
+              fontSize: 26,
+              marginTop: spacing.lg,
+            },
+          ]}
+        >
+          Welcome Back
+        </Text>
 
-      {error && <Text style={[styles.error, { color: colors.danger, marginTop: spacing.sm }]}>{error}</Text>}
+        <Text
+          style={[
+            styles.subheading,
+            {
+              color: colors.textSecondary,
+              marginTop: spacing.xs,
+              marginBottom: spacing.xl,
+            },
+          ]}
+        >
+          Log in with your registered phone number and password.
+        </Text>
 
-      <View style={{ marginTop: spacing.lg }}>
-        <Button
-          label="Log In"
-          loading={loading}
-          disabled={phone.trim().length < 10 || !password}
-          onPress={handleLogin}
-        />
+        <View style={{ gap: spacing.md }}>
+          <TextField
+            label="Mobile Phone Number"
+            placeholder="03XX XXXXXXX"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            icon={Phone}
+          />
+
+          <TextField
+            label="Password"
+            placeholder="Enter your password"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+            icon={Lock}
+            rightAccessory={
+              <Pressable
+                onPress={() => setShowPassword((prev) => !prev)}
+                hitSlop={8}
+                style={{ paddingHorizontal: 4 }}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} color={colors.textMuted} />
+                ) : (
+                  <Eye size={18} color={colors.textMuted} />
+                )}
+              </Pressable>
+            }
+          />
+        </View>
+
+        {error && (
+          <View style={[styles.errorBox, { backgroundColor: colors.dangerLight, borderRadius: radii.md, marginTop: spacing.md }]}>
+            <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
+          </View>
+        )}
+
+        <View style={{ marginTop: spacing.xl }}>
+          <Button
+            label="Log In"
+            variant="primary"
+            loading={loading}
+            disabled={phone.trim().length < 10 || !password}
+            onPress={handleLogin}
+          />
+        </View>
+
+        <Pressable
+          onPress={() => navigation.navigate('PhoneEntry')}
+          style={styles.signupLink}
+        >
+          <Text style={{ color: colors.brandBlue, fontSize: typography.size.sm, fontFamily: typography.headingWeights.semibold }}>
+            New to Ustavia? Sign up with OTP
+          </Text>
+        </Pressable>
       </View>
-
-      <Pressable onPress={() => navigation.navigate('PhoneEntry')} style={{ marginTop: spacing.lg, alignSelf: 'center' }}>
-        <Text style={{ color: colors.brandBlue, fontSize: typography.size.sm }}>New here? Sign up with your phone number</Text>
-      </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  heading: {},
-  subheading: { fontSize: 14 },
-  error: { fontSize: 13 },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+  },
+  innerContainer: {
+    width: '100%',
+    maxWidth: 480,
+  },
+  logoContainer: {
+    alignItems: 'center',
+  },
+  heading: {
+    textAlign: 'center',
+  },
+  subheading: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  errorBox: {
+    padding: 12,
+  },
+  error: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  signupLink: {
+    marginTop: 24,
+    alignSelf: 'center',
+    padding: 8,
+  },
 });

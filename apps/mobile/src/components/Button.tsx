@@ -1,4 +1,5 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { LucideIcon } from 'lucide-react-native';
 
 import { useTheme } from '../theme/ThemeProvider';
@@ -9,7 +10,7 @@ export type ButtonSize = 'md' | 'lg';
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  /** "primary" (orange) is the default Mazdoor CTA; "trust" (blue) the Customer one; "outline"/"ghost"/"danger" for secondary and destructive actions — see both UX specs' recurring outlined-vs-filled button pairs. */
+  /** "primary" (orange gradient) is the default Mazdoor CTA; "trust" (blue gradient) the Customer one; "outline"/"ghost"/"danger" for secondary and destructive actions. */
   variant?: ButtonVariant;
   size?: ButtonSize;
   disabled?: boolean;
@@ -30,17 +31,54 @@ export function Button({
   iconPosition = 'left',
   fullWidth = true,
 }: ButtonProps) {
-  const { colors, radii, spacing, typography, minTouchTarget } = useTheme();
+  const { colors, radii, spacing, typography, shadows, gradients, minTouchTarget } = useTheme();
   const isDisabled = disabled || loading;
 
-  const palette: Record<ButtonVariant, { bg: string; fg: string; border?: string }> = {
-    primary: { bg: colors.brandOrange, fg: colors.white },
-    trust: { bg: colors.brandBlue, fg: colors.white },
-    outline: { bg: 'transparent', fg: colors.textPrimary, border: colors.border },
-    danger: { bg: 'transparent', fg: colors.danger, border: colors.danger },
-    ghost: { bg: 'transparent', fg: colors.textSecondary },
-  };
-  const { bg, fg, border } = palette[variant];
+  const isGradient = variant === 'primary' || variant === 'trust';
+  const gradientColors = variant === 'primary' ? gradients.mazdoor : gradients.customer;
+
+  // Base colors
+  let bg = isGradient
+    ? gradientColors[0]
+    : variant === 'outline'
+    ? colors.white
+    : variant === 'danger'
+    ? colors.dangerLight
+    : 'transparent';
+
+  let fg = isGradient
+    ? colors.white
+    : variant === 'outline'
+    ? colors.textPrimary
+    : variant === 'danger'
+    ? colors.danger
+    : colors.textSecondary;
+
+  let border = variant === 'outline' ? colors.border : variant === 'danger' ? colors.danger : undefined;
+
+  // Disabled state override: clear, accessible, and visible
+  if (isDisabled) {
+    bg = colors.surfaceSubtle ?? '#F1F5F9';
+    fg = colors.textMuted ?? '#94A3B8';
+    border = undefined;
+  }
+
+  const shadowStyle =
+    !isDisabled && variant === 'primary'
+      ? shadows.glowOrange
+      : !isDisabled && variant === 'trust'
+      ? shadows.glowBlue
+      : !isDisabled && variant === 'outline'
+      ? shadows.sm
+      : undefined;
+
+  // Web native CSS gradient support
+  const webGradientStyle =
+    Platform.OS === 'web' && isGradient && !isDisabled
+      ? ({
+          backgroundImage: `linear-gradient(135deg, ${gradientColors[0]} 0%, ${gradientColors[1]} 100%)`,
+        } as unknown as object)
+      : {};
 
   return (
     <Pressable
@@ -50,28 +88,58 @@ export function Button({
       accessibilityState={{ disabled: isDisabled }}
       style={({ pressed }) => [
         styles.button,
+        shadowStyle,
         {
           backgroundColor: bg,
           borderColor: border,
-          borderWidth: border ? 1 : 0,
+          borderWidth: border ? 1.5 : 0,
           borderRadius: radii.md,
           paddingVertical: size === 'lg' ? spacing.md + 2 : spacing.sm + 2,
+          paddingHorizontal: spacing.xl,
           minHeight: minTouchTarget,
-          opacity: isDisabled ? 0.5 : pressed ? 0.85 : 1,
+          opacity: pressed && !isDisabled ? 0.9 : 1,
+          transform: [{ scale: pressed && !isDisabled ? 0.985 : 1 }],
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
+          overflow: 'hidden',
         },
+        webGradientStyle,
       ]}
     >
+      {/* Native SVG gradient for iOS & Android */}
+      {Platform.OS !== 'web' && isGradient && !isDisabled && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Svg width="100%" height="100%">
+            <Defs>
+              <LinearGradient id={`btn-grad-${variant}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor={gradientColors[0]} />
+                <Stop offset="100%" stopColor={gradientColors[1]} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" rx={radii.md} fill={`url(#btn-grad-${variant})`} />
+          </Svg>
+        </View>
+      )}
+
       <View style={styles.content}>
         {loading ? (
-          <ActivityIndicator color={fg} />
+          <ActivityIndicator color={fg} size="small" />
         ) : (
           <>
-            {Icon && iconPosition === 'left' && <Icon size={18} color={fg} />}
-            <Text style={[styles.label, { color: fg, fontFamily: typography.headingWeights.semibold, fontSize: typography.size.md }]}>
+            {Icon && iconPosition === 'left' && <Icon size={18} color={fg} strokeWidth={2.2} />}
+            <Text
+              style={[
+                styles.label,
+                {
+                  color: fg,
+                  fontFamily: typography.headingWeights.semibold,
+                  fontSize: size === 'lg' ? typography.size.md : typography.size.base,
+                  letterSpacing: 0.3,
+                },
+              ]}
+            >
               {label}
             </Text>
-            {Icon && iconPosition === 'right' && <Icon size={18} color={fg} />}
+            {Icon && iconPosition === 'right' && <Icon size={18} color={fg} strokeWidth={2.2} />}
           </>
         )}
       </View>
@@ -83,11 +151,14 @@ const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
+    zIndex: 2,
   },
   label: {
     textAlign: 'center',

@@ -5,27 +5,54 @@ import { useTheme } from '../theme/ThemeProvider';
 
 interface CardProps {
   style?: ViewStyle;
-  /** "flat" (bordered, no shadow) for dense lists; "raised" (shadow, no border) for standalone summary cards. */
-  variant?: 'flat' | 'raised';
-  padding?: 'sm' | 'md' | 'lg';
+  /** "flat" (bordered, crisp); "raised" (soft ambient shadow, subtle border); "glass" (frosted translucent); "tinted" (subtle slate fill). */
+  variant?: 'flat' | 'raised' | 'glass' | 'tinted';
+  padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
-export function Card({ children, style, variant = 'flat', padding = 'md' }: PropsWithChildren<CardProps>) {
+export function Card({ children, style, variant = 'raised', padding = 'md' }: PropsWithChildren<CardProps>) {
   const { colors, radii, spacing, shadows } = useTheme();
-  const paddingValue = { sm: spacing.md, md: spacing.lg, lg: spacing.xl }[padding];
+  const paddingValue = {
+    none: 0,
+    sm: spacing.md,
+    md: spacing.lg,
+    lg: spacing.xl,
+  }[padding];
+
+  const variantStyle: ViewStyle = {
+    flat: {
+      backgroundColor: colors.white,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    raised: {
+      backgroundColor: colors.white,
+      borderWidth: 1,
+      borderColor: colors.borderSubtle,
+      ...shadows.md,
+    },
+    glass: {
+      backgroundColor: colors.surfaceGlass,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      ...shadows.sm,
+    },
+    tinted: {
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.borderSubtle,
+    },
+  }[variant];
 
   return (
     <View
       style={[
         styles.card,
         {
-          backgroundColor: colors.white,
-          borderRadius: radii.md,
+          borderRadius: radii.lg,
           padding: paddingValue,
-          borderWidth: variant === 'flat' ? 1 : 0,
-          borderColor: colors.border,
         },
-        variant === 'raised' && shadows.md,
+        variantStyle,
         style,
       ]}
     >

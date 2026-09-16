@@ -12,24 +12,70 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
-/** Centered icon + heading + subtext (+ optional CTA) pattern both UX specs use for every empty list (no jobs posted, empty portfolio, no notifications, ...). */
+/**
+ * Modern empty-state layout featuring double-ringed ambient icon emblem,
+ * high-contrast typography, and contextual action.
+ */
 export function EmptyState({ icon: Icon, title, description, actionLabel, onAction }: EmptyStateProps) {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, typography, radii } = useTheme();
 
   return (
-    <View style={[styles.container, { paddingVertical: spacing.xxl, gap: spacing.sm }]}>
-      <View style={[styles.iconCircle, { backgroundColor: colors.surface }]}>
-        <Icon size={28} color={colors.textMuted} />
+    <View style={[styles.container, { paddingVertical: spacing.xxxl, gap: spacing.md }]}>
+      <View
+        style={[
+          styles.outerRing,
+          {
+            backgroundColor: colors.brandBlueLight,
+            borderRadius: radii.full,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.innerRing,
+            {
+              backgroundColor: colors.white,
+              borderRadius: radii.full,
+              borderColor: 'rgba(0, 97, 153, 0.12)',
+            },
+          ]}
+        >
+          <Icon size={30} color={colors.brandBlue} strokeWidth={2} />
+        </View>
       </View>
-      <Text style={[styles.title, { color: colors.textPrimary, fontFamily: typography.headingWeights.semibold, fontSize: typography.size.md }]}>
-        {title}
-      </Text>
-      {description && (
-        <Text style={[styles.description, { color: colors.textSecondary, fontSize: typography.size.base }]}>{description}</Text>
-      )}
+
+      <View style={styles.textStack}>
+        <Text
+          style={[
+            styles.title,
+            {
+              color: colors.textPrimary,
+              fontFamily: typography.headingWeights.bold,
+              fontSize: typography.size.lg,
+            },
+          ]}
+        >
+          {title}
+        </Text>
+        {description && (
+          <Text
+            style={[
+              styles.description,
+              {
+                color: colors.textSecondary,
+                fontSize: typography.size.base,
+                lineHeight: 22,
+              },
+            ]}
+          >
+            {description}
+          </Text>
+        )}
+      </View>
+
       {actionLabel && onAction && (
-        <View style={{ marginTop: spacing.sm, width: '100%' }}>
-          <Button label={actionLabel} onPress={onAction} variant="outline" fullWidth={false} />
+        <View style={{ marginTop: spacing.xs }}>
+          <Button label={actionLabel} onPress={onAction} variant="trust" fullWidth={false} />
         </View>
       )}
     </View>
@@ -37,8 +83,32 @@ export function EmptyState({ icon: Icon, title, description, actionLabel, onActi
 }
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', paddingHorizontal: 24 },
-  iconCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  title: { textAlign: 'center' },
-  description: { textAlign: 'center' },
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  outerRing: {
+    width: 80,
+    height: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  innerRing: {
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+  },
+  textStack: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  title: {
+    textAlign: 'center',
+  },
+  description: {
+    textAlign: 'center',
+  },
 });

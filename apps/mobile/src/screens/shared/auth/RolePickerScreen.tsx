@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { CheckCircle2, HardHat, UserSearch } from 'lucide-react-native';
+import { CheckCircle2, HardHat, ShieldCheck, Sparkles, UserSearch } from 'lucide-react-native';
 import type { UserRole } from '@ustavia/shared';
 
 import { verifyOtp } from '../../../api/auth';
@@ -16,18 +16,36 @@ import { afterAuthSession } from './afterAuthSession';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'RolePicker'>;
 
-const ROLE_OPTIONS: Array<{ role: UserRole; title: string; description: string; icon: typeof HardHat }> = [
-  { role: 'mazdoor', title: "I'm a Mazdoor", description: 'I do jobs and get paid for my work.', icon: HardHat },
-  { role: 'customer', title: "I'm a Customer", description: 'I need to hire help for a job.', icon: UserSearch },
+interface RoleOption {
+  role: UserRole;
+  title: string;
+  badge: string;
+  description: string;
+  icon: typeof HardHat;
+  perks: string[];
+}
+
+const ROLE_OPTIONS: RoleOption[] = [
+  {
+    role: 'mazdoor',
+    title: "I'm a Mazdoor",
+    badge: 'Worker & Specialist',
+    description: 'Find nearby jobs, quote prices, and receive guaranteed payouts.',
+    icon: HardHat,
+    perks: ['Instant local job leads', 'Guaranteed escrow payment', 'Daily wallet withdrawals'],
+  },
+  {
+    role: 'customer',
+    title: "I'm a Customer",
+    badge: 'Hiring Services',
+    description: 'Post jobs, negotiate fair quotes, and hire verified local workers.',
+    icon: UserSearch,
+    perks: ['Verified worker profiles', 'Payment held in escrow', 'NADRA-vetted specialists'],
+  },
 ];
 
-/**
- * The real `POST /auth/otp/verify` call happens here, not on OtpScreen —
- * the API only pins a role the *first* time a phone is seen, so the role
- * has to already be chosen before the call is made.
- */
 export function RolePickerScreen({ route, navigation }: Props) {
-  const { colors, radii, spacing, typography } = useTheme();
+  const { colors, radii, spacing, typography, shadows } = useTheme();
   const setAccessToken = useSessionStore((state) => state.setAccessToken);
   const setUser = useAuthStore((state) => state.setUser);
   const [selected, setSelected] = useState<UserRole | null>(null);
@@ -52,66 +70,219 @@ export function RolePickerScreen({ route, navigation }: Props) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
-      <Logo size={48} />
-      <View style={{ height: spacing.lg }} />
-      <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: 24 }]}>
-        How will you use Ustavia?
-      </Text>
-      <Text style={[styles.subheading, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg }]}>
-        This choice is permanent for this account.
-      </Text>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.canvas ?? colors.white }}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <View style={[styles.innerContainer, { padding: spacing.xl }]}>
+        <View style={styles.logoContainer}>
+          <Logo size={48} />
+        </View>
 
-      <View style={{ gap: spacing.md, marginBottom: spacing.lg }}>
-        {ROLE_OPTIONS.map((option) => {
-          const isSelected = selected === option.role;
-          const Icon = option.icon;
-          return (
-            <Pressable
-              key={option.role}
-              onPress={() => setSelected(option.role)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              style={[
-                styles.card,
-                {
-                  borderColor: isSelected ? accentFor(option.role) : colors.border,
-                  backgroundColor: isSelected ? tintFor(option.role) : colors.white,
-                  borderRadius: radii.lg,
-                  padding: spacing.lg,
-                },
-              ]}
-            >
-              <View style={styles.cardTopRow}>
-                <View style={[styles.iconCircle, { backgroundColor: colors.white, borderRadius: radii.full }]}>
-                  <Icon size={22} color={accentFor(option.role)} />
+        <Text
+          style={[
+            styles.heading,
+            {
+              color: colors.textPrimary,
+              fontFamily: typography.headingWeights.bold,
+              fontSize: 26,
+              marginTop: spacing.lg,
+            },
+          ]}
+        >
+          How will you use Ustavia?
+        </Text>
+
+        <Text
+          style={[
+            styles.subheading,
+            {
+              color: colors.textSecondary,
+              marginTop: spacing.xs,
+              marginBottom: spacing.xl,
+            },
+          ]}
+        >
+          Select your primary role. This choice personalizes your app experience.
+        </Text>
+
+        <View style={{ gap: spacing.md, marginBottom: spacing.xl }}>
+          {ROLE_OPTIONS.map((option) => {
+            const isSelected = selected === option.role;
+            const Icon = option.icon;
+            const roleAccent = accentFor(option.role);
+            const roleTint = tintFor(option.role);
+            const activeShadow = option.role === 'mazdoor' ? shadows.glowOrange : shadows.glowBlue;
+
+            return (
+              <Pressable
+                key={option.role}
+                onPress={() => setSelected(option.role)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                style={({ pressed }) => [
+                  styles.card,
+                  {
+                    borderColor: isSelected ? roleAccent : colors.borderSubtle,
+                    borderWidth: isSelected ? 2 : 1.5,
+                    backgroundColor: isSelected ? roleTint : colors.white,
+                    borderRadius: radii.lg,
+                    padding: spacing.lg,
+                    transform: [{ scale: pressed ? 0.99 : 1 }],
+                  },
+                  isSelected ? activeShadow : shadows.sm,
+                ]}
+              >
+                <View style={styles.cardHeader}>
+                  <View
+                    style={[
+                      styles.iconCircle,
+                      {
+                        backgroundColor: isSelected ? colors.white : roleTint,
+                        borderRadius: radii.full,
+                      },
+                    ]}
+                  >
+                    <Icon size={24} color={roleAccent} strokeWidth={2.2} />
+                  </View>
+
+                  <View style={styles.headerTitles}>
+                    <View style={styles.titleRow}>
+                      <Text
+                        style={[
+                          styles.cardTitle,
+                          {
+                            color: colors.textPrimary,
+                            fontFamily: typography.headingWeights.bold,
+                            fontSize: 18,
+                          },
+                        ]}
+                      >
+                        {option.title}
+                      </Text>
+                      {isSelected && <CheckCircle2 size={22} color={roleAccent} strokeWidth={2.5} />}
+                    </View>
+                    <Text style={[styles.badgeText, { color: roleAccent, fontFamily: typography.headingWeights.semibold }]}>
+                      {option.badge}
+                    </Text>
+                  </View>
                 </View>
-                {isSelected && <CheckCircle2 size={20} color={accentFor(option.role)} />}
-              </View>
-              <Text style={[styles.cardTitle, { color: colors.textPrimary, fontFamily: typography.headingWeights.semibold, marginTop: spacing.sm }]}>
-                {option.title}
-              </Text>
-              <Text style={[styles.cardDescription, { color: colors.textSecondary, marginTop: 2 }]}>{option.description}</Text>
-            </Pressable>
-          );
-        })}
+
+                <Text
+                  style={[
+                    styles.cardDescription,
+                    {
+                      color: colors.textSecondary,
+                      fontSize: 13,
+                      lineHeight: 18,
+                      marginTop: spacing.sm,
+                      marginBottom: spacing.sm,
+                    },
+                  ]}
+                >
+                  {option.description}
+                </Text>
+
+                <View style={styles.perksList}>
+                  {option.perks.map((perk, i) => (
+                    <View key={i} style={styles.perkItem}>
+                      <Sparkles size={12} color={roleAccent} />
+                      <Text style={[styles.perkText, { color: colors.textPrimary }]}>{perk}</Text>
+                    </View>
+                  ))}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {error && (
+          <View style={[styles.errorBox, { backgroundColor: colors.dangerLight, borderRadius: radii.md }]}>
+            <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
+          </View>
+        )}
+
+        <Button
+          label="Continue"
+          variant={selected === 'customer' ? 'trust' : 'primary'}
+          loading={loading}
+          disabled={!selected}
+          onPress={handleContinue}
+        />
       </View>
-
-      {error && <Text style={[styles.error, { color: colors.danger, marginBottom: spacing.md }]}>{error}</Text>}
-
-      <Button label="Continue" loading={loading} disabled={!selected} onPress={handleContinue} />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  heading: {},
-  subheading: { fontSize: 14 },
-  error: { fontSize: 13 },
-  card: { borderWidth: 2 },
-  cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  iconCircle: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { fontSize: 17 },
-  cardDescription: { fontSize: 13 },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+  },
+  innerContainer: {
+    width: '100%',
+    maxWidth: 500,
+  },
+  logoContainer: {
+    alignItems: 'center',
+  },
+  heading: {
+    textAlign: 'center',
+  },
+  subheading: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  card: {
+    position: 'relative',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitles: {
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardTitle: {},
+  badgeText: {
+    fontSize: 12,
+    marginTop: 1,
+  },
+  cardDescription: {},
+  perksList: {
+    gap: 5,
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+  },
+  perkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  perkText: {
+    fontSize: 12,
+  },
+  errorBox: {
+    padding: 12,
+    marginBottom: 16,
+  },
+  error: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
 });

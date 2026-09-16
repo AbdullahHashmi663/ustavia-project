@@ -14,7 +14,10 @@ interface JobCardProps {
   onPress?: () => void;
 }
 
-/** The one job-list row used across Dashboard, Schedule, Scheduled, and History — see both UX specs' recurring job-card layout (title, meta row, status pill, price, chevron). */
+/**
+ * Modern bento-style job row with elevated surface, high-contrast typography,
+ * status chip with indicator dot, and dedicated price badge.
+ */
 export function JobCard({ title, meta, status, price, onPress }: JobCardProps) {
   const { colors, radii, spacing, shadows, typography } = useTheme();
 
@@ -26,10 +29,10 @@ export function JobCard({ title, meta, status, price, onPress }: JobCardProps) {
         styles.card,
         {
           backgroundColor: colors.white,
-          borderColor: colors.border,
-          borderRadius: radii.md,
+          borderColor: pressed ? colors.brandOrange : colors.borderSubtle,
+          borderRadius: radii.lg,
           padding: spacing.lg,
-          opacity: pressed ? 0.85 : 1,
+          transform: [{ scale: pressed && onPress ? 0.99 : 1 }],
         },
         shadows.sm,
       ]}
@@ -38,7 +41,15 @@ export function JobCard({ title, meta, status, price, onPress }: JobCardProps) {
         <View style={styles.textColumn}>
           <Text
             numberOfLines={2}
-            style={[styles.title, { color: colors.textPrimary, fontFamily: typography.headingWeights.semibold, fontSize: typography.size.base }]}
+            style={[
+              styles.title,
+              {
+                color: colors.textPrimary,
+                fontFamily: typography.headingWeights.semibold,
+                fontSize: typography.size.base + 1,
+                lineHeight: 22,
+              },
+            ]}
           >
             {title}
           </Text>
@@ -46,16 +57,41 @@ export function JobCard({ title, meta, status, price, onPress }: JobCardProps) {
             <Text style={[styles.meta, { color: colors.textSecondary, fontSize: typography.size.sm }]}>{meta}</Text>
           )}
         </View>
-        {onPress && <ChevronRight size={20} color={colors.textMuted} />}
+
+        {onPress && (
+          <View style={[styles.chevronBadge, { backgroundColor: colors.surfaceSubtle, borderRadius: radii.full }]}>
+            <ChevronRight size={18} color={colors.textSecondary} />
+          </View>
+        )}
       </View>
 
       {(status || price != null) && (
-        <View style={[styles.footerRow, { marginTop: spacing.sm }]}>
-          {status && <StatusBadge status={status} />}
+        <View style={[styles.footerRow, { marginTop: spacing.md, paddingTop: spacing.xs }]}>
+          {status ? <StatusBadge status={status} /> : <View />}
           {price != null && (
-            <Text style={{ color: colors.textPrimary, fontFamily: typography.headingWeights.semibold, fontSize: typography.size.base }}>
-              Rs {price.toLocaleString()}
-            </Text>
+            <View
+              style={[
+                styles.pricePill,
+                {
+                  backgroundColor: colors.brandOrangeLight,
+                  borderColor: 'rgba(255, 103, 1, 0.2)',
+                  borderRadius: radii.full,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.priceText,
+                  {
+                    color: colors.brandOrangeDark,
+                    fontFamily: typography.headingWeights.bold,
+                    fontSize: typography.size.base,
+                  },
+                ]}
+              >
+                Rs {price.toLocaleString()}
+              </Text>
+            </View>
           )}
         </View>
       )}
@@ -64,10 +100,37 @@ export function JobCard({ title, meta, status, price, onPress }: JobCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1 },
-  mainRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  textColumn: { flex: 1, gap: 2 },
+  card: {
+    borderWidth: 1,
+  },
+  mainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  textColumn: {
+    flex: 1,
+    gap: 4,
+  },
   title: {},
-  meta: {},
-  footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  meta: {
+    letterSpacing: 0.1,
+  },
+  chevronBadge: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pricePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderWidth: 1,
+  },
+  priceText: {},
 });

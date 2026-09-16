@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Lock } from 'lucide-react-native';
+import { Check, Eye, EyeOff, Lock, Shield } from 'lucide-react-native';
 
 import { setPassword as setPasswordApi } from '../../../api/auth';
 import { ApiError } from '../../../api/client';
@@ -14,17 +14,12 @@ import { useTheme } from '../../../theme/ThemeProvider';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SetPassword'>;
 
-/**
- * Shown once, right after a fresh OTP verify (or a password login for an
- * account that never set one) — lets a returning user skip the OTP round
- * trip next time via `POST /auth/login`. Skippable; nothing downstream
- * depends on this actually happening.
- */
 export function SetPasswordScreen({ route, navigation }: Props) {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, radii, spacing, typography } = useTheme();
   const completeAuth = useAuthStore((state) => state.completeAuth);
   const [password, setPasswordInput] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,48 +49,161 @@ export function SetPasswordScreen({ route, navigation }: Props) {
     }
   };
 
+  const isLongEnough = password.length >= 6;
+  const isMatching = Boolean(password && password === confirm);
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
-      <Logo size={48} />
-      <View style={{ height: spacing.lg }} />
-      <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: 24 }]}>
-        Set up a password
-      </Text>
-      <Text style={[styles.subheading, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.lg }]}>
-        Skip the SMS code next time — log in with your phone number and this password instead.
-      </Text>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.canvas ?? colors.white }}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <View style={[styles.innerContainer, { padding: spacing.xl }]}>
+        <View style={styles.logoContainer}>
+          <Logo size={48} />
+        </View>
 
-      <TextField
-        placeholder="New password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPasswordInput}
-        icon={Lock}
-      />
-      <View style={{ height: spacing.md }} />
-      <TextField
-        placeholder="Confirm password"
-        secureTextEntry
-        value={confirm}
-        onChangeText={setConfirm}
-        icon={Lock}
-      />
+        <Text
+          style={[
+            styles.heading,
+            {
+              color: colors.textPrimary,
+              fontFamily: typography.headingWeights.bold,
+              fontSize: 24,
+              marginTop: spacing.lg,
+            },
+          ]}
+        >
+          Set up a password
+        </Text>
 
-      {error && <Text style={[styles.error, { color: colors.danger, marginTop: spacing.sm }]}>{error}</Text>}
+        <Text
+          style={[
+            styles.subheading,
+            {
+              color: colors.textSecondary,
+              marginTop: spacing.xs,
+              marginBottom: spacing.xl,
+            },
+          ]}
+        >
+          Skip SMS verification next time. Log in instantly using your phone number and password.
+        </Text>
 
-      <View style={{ marginTop: spacing.lg }}>
-        <Button label="Set Password" loading={loading} disabled={!password || !confirm} onPress={handleSet} />
+        <View style={{ gap: spacing.md }}>
+          <TextField
+            label="New Password"
+            placeholder="Minimum 6 characters"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPasswordInput}
+            icon={Lock}
+            rightAccessory={
+              <Pressable
+                onPress={() => setShowPassword((prev) => !prev)}
+                hitSlop={8}
+                style={{ paddingHorizontal: 4 }}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} color={colors.textMuted} />
+                ) : (
+                  <Eye size={18} color={colors.textMuted} />
+                )}
+              </Pressable>
+            }
+          />
+
+          <TextField
+            label="Confirm Password"
+            placeholder="Re-enter your password"
+            secureTextEntry={!showPassword}
+            value={confirm}
+            onChangeText={setConfirm}
+            icon={Lock}
+          />
+        </View>
+
+        {/* Requirements check */}
+        <View style={[styles.checklist, { backgroundColor: colors.surfaceSubtle, borderRadius: radii.md, padding: spacing.md, marginTop: spacing.md }]}>
+          <View style={styles.checkItem}>
+            <Check size={14} color={isLongEnough ? colors.success : colors.textMuted} strokeWidth={2.5} />
+            <Text style={{ fontSize: 12, color: isLongEnough ? colors.textPrimary : colors.textMuted }}>
+              At least 6 characters
+            </Text>
+          </View>
+          <View style={styles.checkItem}>
+            <Check size={14} color={isMatching ? colors.success : colors.textMuted} strokeWidth={2.5} />
+            <Text style={{ fontSize: 12, color: isMatching ? colors.textPrimary : colors.textMuted }}>
+              Passwords match
+            </Text>
+          </View>
+        </View>
+
+        {error && (
+          <View style={[styles.errorBox, { backgroundColor: colors.dangerLight, borderRadius: radii.md, marginTop: spacing.md }]}>
+            <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
+          </View>
+        )}
+
+        <View style={{ marginTop: spacing.xl }}>
+          <Button
+            label="Save Password"
+            variant="primary"
+            loading={loading}
+            disabled={!isLongEnough || !isMatching}
+            onPress={handleSet}
+          />
+        </View>
+
+        <Pressable onPress={proceed} style={styles.skipButton}>
+          <Text style={{ color: colors.textMuted, fontSize: typography.size.sm, fontFamily: typography.headingWeights.semibold }}>
+            Skip for now
+          </Text>
+        </Pressable>
       </View>
-      <Pressable onPress={proceed} style={{ marginTop: spacing.md, padding: spacing.sm, alignSelf: 'center' }}>
-        <Text style={{ color: colors.textMuted, fontSize: typography.size.sm }}>Skip for now</Text>
-      </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  heading: {},
-  subheading: { fontSize: 14 },
-  error: { fontSize: 13 },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+  },
+  innerContainer: {
+    width: '100%',
+    maxWidth: 480,
+  },
+  logoContainer: {
+    alignItems: 'center',
+  },
+  heading: {
+    textAlign: 'center',
+  },
+  subheading: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  checklist: {
+    gap: 6,
+  },
+  checkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  errorBox: {
+    padding: 12,
+  },
+  error: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  skipButton: {
+    marginTop: 16,
+    alignSelf: 'center',
+    padding: 8,
+  },
 });

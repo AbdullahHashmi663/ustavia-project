@@ -1,10 +1,11 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { CalendarClock } from 'lucide-react-native';
+import { CalendarClock, Plus, RefreshCw } from 'lucide-react-native';
 
 import { useJobsList } from '../../api/hooks';
 import { EmptyState } from '../../components/EmptyState';
+import { IconButton } from '../../components/IconButton';
 import { JobCard } from '../../components/JobCard';
 import type { AppStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -19,39 +20,78 @@ export function ScheduledScreen() {
   const myJobs = jobs.filter((job) => ACTIVE_STATUSES.includes(job.status as (typeof ACTIVE_STATUSES)[number]));
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.white, padding: spacing.xl }]}>
-      <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: typography.size.xl }]}>
-        Scheduled
-      </Text>
-      <FlatList
-        data={myJobs}
-        keyExtractor={(job) => job.id}
-        refreshing={isRefetching}
-        onRefresh={refetch}
-        contentContainerStyle={{ gap: spacing.md, marginTop: spacing.lg, flexGrow: 1 }}
-        renderItem={({ item }) => (
-          <JobCard
-            title={item.description}
-            status={item.status}
-            price={item.agreedPrice}
-            onPress={() => navigation.navigate('JobDetail', { jobId: item.id })}
+    <View style={[styles.container, { backgroundColor: colors.canvas ?? colors.white }]}>
+      <View style={styles.centerWrapper}>
+        <View style={[styles.headerRow, { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.md }]}>
+          <View>
+            <Text style={[styles.heading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, fontSize: 24 }]}>
+              Scheduled Jobs
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
+              {myJobs.length} active booking{myJobs.length === 1 ? '' : 's'} in progress
+            </Text>
+          </View>
+
+          <IconButton
+            icon={RefreshCw}
+            onPress={() => refetch()}
+            variant="filled"
+            accessibilityLabel="Refresh scheduled jobs"
           />
-        )}
-        ListEmptyComponent={
-          isLoading ? null : (
-            <EmptyState
-              icon={CalendarClock}
-              title="No active jobs yet"
-              description="Post a job from the Post Job tab and it'll show up here once a Mazdoor picks it up."
+        </View>
+
+        <FlatList
+          data={myJobs}
+          keyExtractor={(job) => job.id}
+          refreshing={isRefetching}
+          onRefresh={refetch}
+          contentContainerStyle={{
+            gap: spacing.md,
+            paddingHorizontal: spacing.xl,
+            paddingTop: spacing.sm,
+            paddingBottom: spacing.xxl,
+            flexGrow: 1,
+          }}
+          renderItem={({ item }) => (
+            <JobCard
+              title={item.description}
+              status={item.status}
+              price={item.agreedPrice}
+              meta="Tap for status, Mazdoor profile & chat"
+              onPress={() => navigation.navigate('JobDetail', { jobId: item.id })}
             />
-          )
-        }
-      />
+          )}
+          ListEmptyComponent={
+            isLoading ? null : (
+              <EmptyState
+                icon={CalendarClock}
+                title="No active bookings"
+                description="When you post a job and a Mazdoor negotiates or confirms, it will appear here."
+                actionLabel="Refresh List"
+                onAction={() => refetch()}
+              />
+            )
+          }
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
+  centerWrapper: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   heading: {},
 });
