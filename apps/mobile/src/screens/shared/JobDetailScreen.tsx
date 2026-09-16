@@ -171,7 +171,6 @@ export function JobDetailScreen({ route }: Props) {
   };
 
   const handleSos = () => {
-    toggleSos(jobId);
     navigation.navigate('Sos', { jobId });
   };
 

@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { HelpCircle, KeyRound, Lock, LogOut, ShieldAlert, ShieldCheck, ShieldQuestion, UserRound } from 'lucide-react-native';
+import { HelpCircle, KeyRound, LifeBuoy, Lock, LogOut, ShieldAlert, ShieldCheck, ShieldQuestion, UserRound } from 'lucide-react-native';
 
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -109,6 +109,19 @@ export function SettingsScreen() {
             variant="outline"
             icon={KeyRound}
             onPress={() => navigation.navigate('ChangePassword')}
+          />
+        </View>
+
+        {/* Support & Help Section */}
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold, marginBottom: spacing.sm }]}>
+          Help & Assistance
+        </Text>
+        <View style={{ marginBottom: spacing.xl }}>
+          <Button
+            label="Help & Support Center"
+            variant="outline"
+            icon={LifeBuoy}
+            onPress={() => navigation.navigate('HelpCenter')}
           />
         </View>
 

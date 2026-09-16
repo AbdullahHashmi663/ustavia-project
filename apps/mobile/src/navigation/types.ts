@@ -50,4 +50,5 @@ export type AppStackParamList = {
   Withdrawal: undefined;
   AddBankAccount: undefined;
   ChangePassword: undefined;
+  HelpCenter: undefined;
 };

@@ -12,6 +12,7 @@ import { PaymentSuccessScreen } from '../screens/shared/payment/PaymentSuccessSc
 import { SosScreen } from '../screens/shared/SosScreen';
 import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme/ThemeProvider';
+import { HelpCenterScreen } from '../screens/shared/HelpCenterScreen';
 import { BidComparisonScreen } from '../screens/customer/BidComparisonScreen';
 import { FullCategoryScreen } from '../screens/customer/FullCategoryScreen';
 import { CustomerTabs } from './CustomerTabs';
@@ -83,6 +84,11 @@ export function AppStack() {
         name="ChangePassword"
         component={ChangePasswordScreen}
         options={{ headerShown: true, title: 'Change Password' }}
+      />
+      <Stack.Screen
+        name="HelpCenter"
+        component={HelpCenterScreen}
+        options={{ headerShown: true, title: 'Help & Support' }}
       />
     </Stack.Navigator>
   );
