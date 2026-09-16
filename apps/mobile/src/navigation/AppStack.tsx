@@ -12,6 +12,7 @@ import { PaymentSuccessScreen } from '../screens/shared/payment/PaymentSuccessSc
 import { SosScreen } from '../screens/shared/SosScreen';
 import { useAuthStore } from '../store/auth';
 import { useTheme } from '../theme/ThemeProvider';
+import { BidComparisonScreen } from '../screens/customer/BidComparisonScreen';
 import { FullCategoryScreen } from '../screens/customer/FullCategoryScreen';
 import { CustomerTabs } from './CustomerTabs';
 import { MazdoorTabs } from './MazdoorTabs';
@@ -44,6 +45,7 @@ export function AppStack() {
     >
       <Stack.Screen name="Tabs" component={Tabs} />
       <Stack.Screen name="FullCategory" component={FullCategoryScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="BidComparison" component={BidComparisonScreen} options={{ headerShown: false }} />
       <Stack.Screen name="JobDetail" component={JobDetailScreen} options={{ headerShown: true, title: 'Job Details' }} />
       <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, title: 'Chat' }} />
       <Stack.Screen name="Sos" component={SosScreen} options={{ presentation: 'fullScreenModal' }} />

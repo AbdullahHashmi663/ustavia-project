@@ -39,6 +39,7 @@ export type CustomerTabsParamList = {
 export type AppStackParamList = {
   Tabs: NavigatorScreenParams<MazdoorTabsParamList | CustomerTabsParamList>;
   FullCategory: undefined;
+  BidComparison: { jobId: string; jobTitle?: string };
   JobDetail: { jobId: string };
   Chat: { jobId: string };
   Sos: { jobId: string };
