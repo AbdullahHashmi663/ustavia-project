@@ -22,6 +22,8 @@ export type MazdoorTabsParamList = {
 };
 
 export type CustomerTabsParamList = {
+  Home: undefined;
+  Bookings: undefined;
   PostJob: undefined;
   Scheduled: undefined;
   Messages: undefined;
@@ -31,6 +33,7 @@ export type CustomerTabsParamList = {
 
 export type AppStackParamList = {
   Tabs: NavigatorScreenParams<MazdoorTabsParamList | CustomerTabsParamList>;
+  FullCategory: undefined;
   JobDetail: { jobId: string };
   Chat: { jobId: string };
   Sos: { jobId: string };

@@ -1,10 +1,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { CalendarClock, History, MessageCircle, PlusSquare, Settings } from 'lucide-react-native';
+import { Calendar, Home, MessageCircle, PlusCircle, Settings } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 
+import { CustomerHomeScreen } from '../screens/customer/HomeScreen';
+import { CustomerBookingsScreen } from '../screens/customer/BookingsScreen';
 import { PostJobScreen } from '../screens/customer/PostJobScreen';
-import { ScheduledScreen } from '../screens/customer/ScheduledScreen';
-import { HistoryScreen } from '../screens/customer/HistoryScreen';
 import { MessagesScreen } from '../screens/shared/MessagesScreen';
 import { SettingsScreen } from '../screens/shared/SettingsScreen';
 import { useTheme } from '../theme/ThemeProvider';
@@ -12,7 +12,7 @@ import type { CustomerTabsParamList } from './types';
 
 const Tab = createBottomTabNavigator<CustomerTabsParamList>();
 
-function TabIcon({ Icon, focused, color, size }: { Icon: typeof PlusSquare; focused: boolean; color: string; size: number }) {
+function TabIcon({ Icon, focused, color, size }: { Icon: any; focused: boolean; color: string; size: number }) {
   const { colors } = useTheme();
   return (
     <View style={styles.iconWrapper}>
@@ -22,12 +22,13 @@ function TabIcon({ Icon, focused, color, size }: { Icon: typeof PlusSquare; focu
   );
 }
 
-/** Customer navigation with deep trust marine blue (#006199) and active glow dots */
+/** Customer navigation matching specification §4.1: Home, Bookings, Post Job, Messages, Profile */
 export function CustomerTabs() {
   const { colors, typography, shadows } = useTheme();
 
   return (
     <Tab.Navigator
+      initialRouteName="Home"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.brandBlue,
@@ -48,19 +49,29 @@ export function CustomerTabs() {
       }}
     >
       <Tab.Screen
+        name="Home"
+        component={CustomerHomeScreen}
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={Home} color={color} size={size} focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="Bookings"
+        component={CustomerBookingsScreen}
+        options={{
+          title: 'Bookings',
+          tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={Calendar} color={color} size={size} focused={focused} />,
+        }}
+      />
+      <Tab.Screen
         name="PostJob"
         component={PostJobScreen}
         options={{
           title: 'Post Job',
-          tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={PlusSquare} color={color} size={size} focused={focused} />,
-        }}
-      />
-      <Tab.Screen
-        name="Scheduled"
-        component={ScheduledScreen}
-        options={{
-          title: 'Scheduled',
-          tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={CalendarClock} color={color} size={size} focused={focused} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon Icon={PlusCircle} color={focused ? colors.brandOrange : color} size={size + 2} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -72,18 +83,10 @@ export function CustomerTabs() {
         }}
       />
       <Tab.Screen
-        name="History"
-        component={HistoryScreen}
-        options={{
-          title: 'History',
-          tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={History} color={color} size={size} focused={focused} />,
-        }}
-      />
-      <Tab.Screen
         name="Settings"
         component={SettingsScreen}
         options={{
-          title: 'Settings',
+          title: 'Profile',
           tabBarIcon: ({ color, size, focused }) => <TabIcon Icon={Settings} color={color} size={size} focused={focused} />,
         }}
       />
