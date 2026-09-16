@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -12,6 +12,8 @@ import {
   MessageCircle,
   ShieldCheck,
   Siren,
+  Sparkles,
+  Star,
   UserRound,
   Wallet,
   XCircle,
@@ -95,6 +97,46 @@ export function JobDetailScreen({ route }: Props) {
   const [quoteDescription, setQuoteDescription] = useState('');
   const [quoteAmount, setQuoteAmount] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Milestone 3: Live ticking timer for in_progress status
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  useEffect(() => {
+    if (job?.status !== 'in_progress') return;
+    const startTime = job.startedAt ? new Date(job.startedAt).getTime() : Date.now();
+    const updateTimer = () => {
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startTime) / 1000)));
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [job?.status, job?.startedAt]);
+
+  const formatTimer = (totalSecs: number) => {
+    const hrs = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    return `${hrs > 0 ? `${hrs.toString().padStart(2, '0')}:` : ''}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Milestone 3: 4-stage job milestone checklist
+  const [milestones, setMilestones] = useState([
+    { id: '1', title: '1. Problem Assessment & Diagnostic', done: true },
+    { id: '2', title: '2. Prepare Materials & Tools', done: false },
+    { id: '3', title: '3. Execute Repair & Installation', done: false },
+    { id: '4', title: '4. Testing, Inspection & Cleanup', done: false },
+  ]);
+
+  const toggleMilestone = (id: string) => {
+    if (role !== 'mazdoor') return; // Workers update milestones
+    setMilestones((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, done: !m.done } : m)),
+    );
+  };
+
+  // Milestone 3: Customer tip & rating state
+  const [selectedTip, setSelectedTip] = useState<number | null>(null);
+  const [userRating, setUserRating] = useState<number>(5);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
   if (!job) {
     return (
@@ -436,6 +478,67 @@ export function JobDetailScreen({ route }: Props) {
         {/* SECTION: In Progress Status */}
         {job.status === 'in_progress' && (
           <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
+            {/* Live Ticking Elapsed Timer Card (§6.3 in Workers.pdf) */}
+            <Card variant="raised" style={{ gap: spacing.xs, alignItems: 'center', paddingVertical: spacing.lg }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.brandOrange }} />
+                <Text style={{ color: colors.brandOrange, fontFamily: typography.headingWeights.bold, fontSize: 13, letterSpacing: 1 }}>
+                  JOB IN PROGRESS
+                </Text>
+              </View>
+              <Text style={{ fontSize: 32, fontFamily: typography.headingWeights.bold, color: colors.textPrimary, marginVertical: 4 }}>
+                {formatTimer(elapsedSeconds)}
+              </Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                Timer confirmed via Doorstep PIN. Live tracking active.
+              </Text>
+            </Card>
+
+            {/* Milestone Checklist Card (§6.3 in Workers.pdf) */}
+            <Card variant="raised" style={{ gap: spacing.sm }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={[styles.sectionHeading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold }]}>
+                  Repair Milestones
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                  {role === 'mazdoor' ? 'Tap to mark complete' : 'Live progress'}
+                </Text>
+              </View>
+
+              {milestones.map((m) => (
+                <Pressable
+                  key={m.id}
+                  onPress={() => toggleMilestone(m.id)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}
+                >
+                  <View
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      borderWidth: 1.5,
+                      borderColor: m.done ? colors.success : colors.border,
+                      backgroundColor: m.done ? colors.success : colors.white,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {m.done && <Check size={12} color={colors.white} strokeWidth={3} />}
+                  </View>
+                  <Text
+                    style={{
+                      color: m.done ? colors.textPrimary : colors.textSecondary,
+                      fontSize: 13,
+                      textDecorationLine: m.done ? 'line-through' : 'none',
+                      flex: 1,
+                    }}
+                  >
+                    {m.title}
+                  </Text>
+                </Pressable>
+              ))}
+            </Card>
+
             {/* SOS Emergency Bar */}
             <Pressable
               onPress={handleSos}
@@ -555,16 +658,97 @@ export function JobDetailScreen({ route }: Props) {
 
         {/* SECTION: Paid Status */}
         {job.status === 'paid' && (
-          <View style={[styles.paidBanner, { backgroundColor: colors.successLight, borderRadius: radii.lg, padding: spacing.lg, marginTop: spacing.lg }]}>
-            <CheckCircle2 size={24} color={colors.success} strokeWidth={2.5} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#047857', fontFamily: typography.headingWeights.bold, fontSize: 15 }}>
-                Payment Released & Job Closed
-              </Text>
-              <Text style={{ color: '#065F46', fontSize: 12, marginTop: 2 }}>
-                Full escrow payment has cleared. Ustavia warranty is active on this job.
-              </Text>
+          <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
+            <View style={[styles.paidBanner, { backgroundColor: colors.successLight, borderRadius: radii.lg, padding: spacing.lg }]}>
+              <CheckCircle2 size={24} color={colors.success} strokeWidth={2.5} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#047857', fontFamily: typography.headingWeights.bold, fontSize: 15 }}>
+                  Payment Released & Job Closed
+                </Text>
+                <Text style={{ color: '#065F46', fontSize: 12, marginTop: 2 }}>
+                  Full escrow payment has cleared directly to Mazdoor wallet.
+                </Text>
+              </View>
             </View>
+
+            {/* 7-Day Ustavia Workmanship Warranty Protection Card (from DOC-20260826-WA0027) */}
+            <Card variant="raised" style={{ gap: spacing.xs, borderColor: 'rgba(0, 97, 153, 0.2)' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <ShieldCheck size={20} color={colors.brandBlue} />
+                <Text style={[styles.sectionHeading, { color: colors.brandBlue, fontFamily: typography.headingWeights.bold }]}>
+                  7-Day Ustavia Workmanship Warranty
+                </Text>
+              </View>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17, marginTop: 4 }}>
+                This job is backed by Ustavia Warranty. If any plumbing, wiring, or installation defect recurs within 7 days, our verified supervisor re-inspects and fixes it at zero extra charge.
+              </Text>
+            </Card>
+
+            {/* Rating & Tipping Card for Customer (§11.2 & §11.3 in customer.pdf) */}
+            {role === 'customer' && (
+              <Card variant="raised" style={{ gap: spacing.sm }}>
+                <Text style={[styles.sectionHeading, { color: colors.textPrimary, fontFamily: typography.headingWeights.bold }]}>
+                  {ratingSubmitted ? 'Thank You for Your Feedback!' : 'Rate & Tip Your Mazdoor'}
+                </Text>
+
+                {!ratingSubmitted ? (
+                  <>
+                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginVertical: 8 }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Pressable key={star} onPress={() => setUserRating(star)}>
+                          <Star
+                            size={32}
+                            color="#F59E0B"
+                            fill={star <= userRating ? '#F59E0B' : 'transparent'}
+                          />
+                        </Pressable>
+                      ))}
+                    </View>
+
+                    {/* Tipping Chips (Rs. 100, 200, 500) */}
+                    <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center', marginTop: 4 }}>
+                      Add a tip to reward outstanding craftsmanship:
+                    </Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginTop: 6 }}>
+                      {[100, 200, 500].map((amount) => {
+                        const isTipped = selectedTip === amount;
+                        return (
+                          <Pressable
+                            key={amount}
+                            onPress={() => setSelectedTip(isTipped ? null : amount)}
+                            style={{
+                              paddingHorizontal: 16,
+                              paddingVertical: 8,
+                              borderRadius: radii.full,
+                              borderWidth: 1.5,
+                              borderColor: isTipped ? colors.brandOrange : colors.border,
+                              backgroundColor: isTipped ? 'rgba(255, 103, 1, 0.1)' : colors.white,
+                            }}
+                          >
+                            <Text style={{ color: isTipped ? colors.brandOrange : colors.textPrimary, fontWeight: '700', fontSize: 12 }}>
+                              Rs. {amount}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
+                    <View style={{ marginTop: 12 }}>
+                      <Button
+                        label={selectedTip ? `Submit Rating & Tip (Rs. ${selectedTip})` : 'Submit 5-Star Rating'}
+                        variant="trust"
+                        icon={Sparkles}
+                        onPress={() => setRatingSubmitted(true)}
+                      />
+                    </View>
+                  </>
+                ) : (
+                  <Text style={{ color: colors.success, fontSize: 13, textAlign: 'center', fontWeight: '600' }}>
+                    ✓ Your 5-star review has been posted to the Mazdoor's public profile!
+                  </Text>
+                )}
+              </Card>
+            )}
           </View>
         )}
 
